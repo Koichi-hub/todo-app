@@ -42,9 +42,9 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl p-8 border border-white/20">
+      <div className="w-full max-w-md min-w-[600px] bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl p-8 border border-white/20 max-[800px]:!w-full max-[800px]:!max-w-none max-[800px]:!p-8">
         <h1 className="text-3xl font-bold text-white text-center mb-8">
-          Мои Задачи
+          Задачи на сегодня
         </h1>
 
         <div className="flex gap-3 mb-8">
@@ -65,18 +65,43 @@ export default function App() {
         </div>
 
         <DndContext onDragEnd={handleDragEnd}>
-          <SortableContext items={snapshot.context.todos.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-            <div className="space-y-3">
-              {snapshot.context.todos.map((todo) => (
-                <SortableTodo
-                  key={todo.id}
-                  todo={todo}
-                  onToggle={() => send({ type: 'TOGGLE', id: todo.id })}
-                  onDelete={() => send({ type: 'DELETE', id: todo.id })}
-                />
-              ))}
-            </div>
-          </SortableContext>
+          {(() => {
+            const incomplete = snapshot.context.todos.filter((t) => !t.completed)
+            const complete = snapshot.context.todos.filter((t) => t.completed)
+            return (
+              <>
+                <h2 className="text-xl font-semibold text-white/80 mb-3">Ждут выполнения</h2>
+                <SortableContext items={incomplete.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+                  <div className="space-y-3 mb-6">
+                    {incomplete.map((todo) => (
+                      <SortableTodo
+                        key={todo.id}
+                        todo={todo}
+                        onToggle={() => send({ type: 'TOGGLE', id: todo.id })}
+                        onDelete={() => send({ type: 'DELETE', id: todo.id })}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+
+                <h2 className="text-xl font-semibold inline-flex items-center text-white/80 mb-3">
+                  Выполнены
+                </h2>
+                <SortableContext items={complete.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+                  <div className="space-y-3">
+                    {complete.map((todo) => (
+                      <SortableTodo
+                        key={todo.id}
+                        todo={todo}
+                        onToggle={() => send({ type: 'TOGGLE', id: todo.id })}
+                        onDelete={() => send({ type: 'DELETE', id: todo.id })}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </>
+            )
+          })()}
         </DndContext>
       </div>
     </div>

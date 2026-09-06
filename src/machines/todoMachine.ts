@@ -4,10 +4,11 @@ import { Todo } from '../types/Todo';
 type AddEvent = { type: 'ADD'; text: string }
 type ToggleEvent = { type: 'TOGGLE'; id: string }
 type DeleteEvent = { type: 'DELETE'; id: string }
+type DeleteAllCompletedEvent = { type: 'DELETE_ALL_COMPLETED' }
 type SetInputEvent = { type: 'SET_INPUT'; text: string }
 type ReorderEvent = { type: 'REORDER'; oldIndex: number; newIndex: number }
 type TasksLoadedEvent = { type: 'TASKS_LOADED', todos: Todo[] }
-type TodoEvent = AddEvent | ToggleEvent | DeleteEvent | SetInputEvent | ReorderEvent | TasksLoadedEvent
+type TodoEvent = AddEvent | ToggleEvent | DeleteEvent | DeleteAllCompletedEvent | SetInputEvent | ReorderEvent | TasksLoadedEvent
 
 export const machine = setup({
   types: {
@@ -42,6 +43,12 @@ export const machine = setup({
       todos: ({ context, event }) => {
         if (event.type !== 'DELETE') return context.todos
         return context.todos.filter((todo) => todo.id !== event.id)
+      },
+    }),
+    deleteAllCompleted: assign({
+      todos: ({ context, event }) => {
+        if (event.type !== 'DELETE_ALL_COMPLETED') return context.todos
+        return context.todos.filter((todo) => !todo.completed)
       },
     }),
     reorderTodos: assign({
@@ -82,6 +89,9 @@ export const machine = setup({
         },
         DELETE: {
           actions: 'deleteTodo',
+        },
+        DELETE_ALL_COMPLETED: {
+          actions: 'deleteAllCompleted',
         },
         REORDER: {
           actions: 'reorderTodos',
