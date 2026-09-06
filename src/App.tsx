@@ -1,87 +1,27 @@
-import { useMachine } from '@xstate/react'
-import { useState, useEffect, useMemo } from 'react'
-import { createTodoMachine, type Todo } from './machines/todoMachine'
-import { useLocalStorage } from './hooks/useLocalStorage'
 import {
   DndContext,
   type DragEndEvent,
 } from '@dnd-kit/core'
 import {
   SortableContext,
-  useSortable,
-  verticalListSortingStrategy,
+  verticalListSortingStrategy
 } from '@dnd-kit/sortable'
+import { useMachine } from '@xstate/react'
+import { useEffect, useState } from 'react'
 import './App.css'
+import SortableTodo from './components/SortableTodo'
+import { useStore } from './hooks/useStore'
+import { machine } from './machines/todoMachine'
+import { STORAGE_KEY } from './misc/constants'
+import { Todo } from './types/Todo'
 
-const STORAGE_KEY = 'todos'
-
-interface SortableTodoProps {
-  todo: Todo
-  onToggle: () => void
-  onDelete: () => void
-}
-
-function SortableTodo({ todo, onToggle, onDelete }: SortableTodoProps) {
-  const [isHovered, setIsHovered] = useState(false)
-  const { listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: todo.id })
-
-  const style = {
-    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
-    transition: isDragging ? 'none' : transition,
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 1000 : undefined,
-  }
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={`flex items-center gap-4 p-4 bg-white/5 rounded-xl border border-white/10 touch-none transition-all duration-200 ${
-        isHovered && !isDragging ? 'animate-shake' : ''
-      }`}
-    >
-      <div
-        {...listeners}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        className="cursor-grab active:cursor-grabbing text-white/30 hover:text-white/60"
-      >
-        ⋮⋮
-      </div>
-      <div
-        onClick={onToggle}
-        className={`w-5 h-5 rounded-full border-2 cursor-pointer transition-all duration-200 ${
-          todo.completed
-            ? 'border-emerald-500 bg-emerald-500/20'
-            : 'border-white/30'
-        }`}
-      />
-      <span
-        className={`flex-1 ${
-          todo.completed ? 'text-white/70 line-through' : 'text-white/90'
-        }`}
-      >
-        {todo.text}
-      </span>
-      <button
-        onClick={onDelete}
-        className="text-white/50 hover:text-red-400 transition-colors duration-200"
-      >
-        ✕
-      </button>
-    </div>
-  )
-}
-
-function App() {
-  const [todos, setTodos] = useLocalStorage<Todo[]>(STORAGE_KEY, [])
-  const machine = useMemo(() => createTodoMachine(todos), [todos])
+export default function App() {
+  const [save] = useStore<Todo[]>(STORAGE_KEY, (todos) => send({ type: 'TASKS_LOADED', todos }))
   const [snapshot, send] = useMachine(machine)
   const [input, setInput] = useState('')
 
   useEffect(() => {
-    setTodos(snapshot.context.todos)
+    save(snapshot.context.todos)
   }, [snapshot.context.todos])
 
   const handleAdd = () => {
@@ -99,8 +39,6 @@ function App() {
       send({ type: 'REORDER', oldIndex, newIndex })
     }
   }
-
-  const todoIds = snapshot.context.todos.map((t) => t.id)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
@@ -127,7 +65,7 @@ function App() {
         </div>
 
         <DndContext onDragEnd={handleDragEnd}>
-          <SortableContext items={todoIds} strategy={verticalListSortingStrategy}>
+          <SortableContext items={snapshot.context.todos.map((t) => t.id)} strategy={verticalListSortingStrategy}>
             <div className="space-y-3">
               {snapshot.context.todos.map((todo) => (
                 <SortableTodo
@@ -144,5 +82,3 @@ function App() {
     </div>
   )
 }
-
-export default App

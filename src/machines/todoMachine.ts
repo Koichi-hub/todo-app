@@ -1,19 +1,15 @@
 import { setup, assign } from 'xstate'
-
-export interface Todo {
-  id: string
-  text: string
-  completed: boolean
-}
+import { Todo } from '../types/Todo';
 
 type AddEvent = { type: 'ADD'; text: string }
 type ToggleEvent = { type: 'TOGGLE'; id: string }
 type DeleteEvent = { type: 'DELETE'; id: string }
 type SetInputEvent = { type: 'SET_INPUT'; text: string }
 type ReorderEvent = { type: 'REORDER'; oldIndex: number; newIndex: number }
-type TodoEvent = AddEvent | ToggleEvent | DeleteEvent | SetInputEvent | ReorderEvent
+type TasksLoadedEvent = { type: 'TASKS_LOADED', todos: Todo[] }
+type TodoEvent = AddEvent | ToggleEvent | DeleteEvent | SetInputEvent | ReorderEvent | TasksLoadedEvent
 
-const machineSetup = setup({
+export const machine = setup({
   types: {
     context: {} as {
       todos: Todo[]
@@ -57,34 +53,40 @@ const machineSetup = setup({
         return newTodos
       },
     }),
+    tasksLoaded: assign({
+      todos: ({ context, event }) => {
+        if (event.type !== 'TASKS_LOADED') return context.todos
+        return event.todos
+      }
+    })
   },
-})
-
-export const createTodoMachine = (initialTodos: Todo[] = []) =>
-  machineSetup.createMachine({
-    id: 'todo',
-    initial: 'active',
-    context: {
-      todos: initialTodos,
-    },
-    states: {
-      active: {
-        on: {
-          ADD: {
-            actions: 'addTodo',
-          },
-          TOGGLE: {
-            actions: 'toggleTodo',
-          },
-          DELETE: {
-            actions: 'deleteTodo',
-          },
-          REORDER: {
-            actions: 'reorderTodos',
-          },
+}).createMachine({
+  id: 'todo',
+  initial: 'active',
+  context: {
+    todos: [],
+  },
+  on: {
+    TASKS_LOADED: {
+      actions: 'tasksLoaded'
+    }
+  },
+  states: {
+    active: {
+      on: {
+        ADD: {
+          actions: 'addTodo',
+        },
+        TOGGLE: {
+          actions: 'toggleTodo',
+        },
+        DELETE: {
+          actions: 'deleteTodo',
+        },
+        REORDER: {
+          actions: 'reorderTodos',
         },
       },
     },
-  })
-
-export const todoMachine = createTodoMachine()
+  },
+})
