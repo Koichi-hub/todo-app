@@ -1,8 +1,7 @@
 import {
     useSortable
 } from '@dnd-kit/sortable'
-import { useState } from "react"
-import { Todo } from "../types/Todo"
+import { Todo } from "../../shared/types/Todo"
 
 interface SortableTodoProps {
   todo: Todo
@@ -11,7 +10,6 @@ interface SortableTodoProps {
 }
 
 export default function SortableTodo({ todo, onToggle, onDelete }: SortableTodoProps) {
-  const [isHovered, setIsHovered] = useState(false)
   const { listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: todo.id })
 
@@ -26,14 +24,10 @@ export default function SortableTodo({ todo, onToggle, onDelete }: SortableTodoP
     <div
       ref={setNodeRef}
       style={style}
-      className={`flex items-center gap-4 p-4 bg-white/5 rounded-xl border border-white/10 touch-none transition-all duration-200 ${
-        isHovered && !isDragging ? 'animate-shake' : ''
-      }`}
+      className={`flex items-center gap-4 p-4 bg-white/5 rounded-xl border border-white/10 touch-none transition-all duration-200`}
     >
       <div
         {...listeners}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
         className="cursor-grab active:cursor-grabbing text-white/30 hover:text-white/60"
       >
         ⋮⋮

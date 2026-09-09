@@ -1,5 +1,5 @@
 import { setup, assign } from 'xstate'
-import { Todo } from '../types/Todo';
+import { Todo } from '../../shared/types/Todo';
 
 type AddEvent = { type: 'ADD'; text: string }
 type ToggleEvent = { type: 'TOGGLE'; id: string }
