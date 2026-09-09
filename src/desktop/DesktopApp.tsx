@@ -8,7 +8,6 @@ import {
 } from '@dnd-kit/sortable'
 import { useMachine } from '@xstate/react'
 import { useEffect, useState } from 'react'
-import './App.css'
 import SortableTodo from './components/SortableTodo'
 import { useStore } from './hooks/useStore'
 import { machine } from './machines/todoMachine'

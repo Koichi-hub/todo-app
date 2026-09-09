@@ -6,7 +6,7 @@ import MobileApp from './mobile/MobileApp';
 import DesktopApp from './desktop/DesktopApp';
 
 export default function App() {
-    const [isMobile, setIsMobile] = useState(false);
+    const [isMobile, setIsMobile] = useState(true);
 
     useEffect(() => {
         const osType = type();
