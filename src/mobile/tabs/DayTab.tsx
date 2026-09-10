@@ -1,20 +1,16 @@
 import { useState } from 'react'
 import { TodoItem } from '../../shared/components'
-import { Modal, Button } from '../components'
+import { Modal, AddItemInput } from '../components'
 import { useMachineContext } from '../../shared/machines'
 
 export default function DayTab() {
     const { snapshot, send } = useMachineContext()
-    const [input, setInput] = useState('')
     const [isModalOpen, setIsModalOpen] = useState(false)
 
     const today = new Date().toISOString().split('T')[0]
 
-    const handleAdd = () => {
-        if (input.trim()) {
-            send({ type: 'ADD', text: input, date: today })
-            setInput('')
-        }
+    const handleAdd = (text: string) => {
+        send({ type: 'ADD', text, date: today })
     }
 
     const incomplete = snapshot.context.todos.filter((t) => !t.completed)
@@ -24,17 +20,7 @@ export default function DayTab() {
         <div className="flex flex-col items-center gap-2 h-full">
             <h1 className="text-white text-[20px] font-bold flex-shrink-0">Задачи на сегодня</h1>
 
-            <div className="flex gap-2 w-full flex-shrink-0">
-                <input
-                    type="text"
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-                    placeholder="Введите новую задачу..."
-                    className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-white text-[14px] placeholder-white/50 outline-none"
-                />
-                <Button onClick={handleAdd}>+</Button>
-            </div>
+            <AddItemInput placeholder="Введите новую задачу..." onAdd={handleAdd} />
 
             <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar w-full">
                 <div className="w-full mt-2">

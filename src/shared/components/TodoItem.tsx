@@ -9,7 +9,7 @@ export type TodoItemProps = {
 
 export function TodoItem({ todo, onToggle, onAction, actionType }: TodoItemProps) {
     return (
-        <div className="flex items-center gap-3 p-3 bg-white/10 border border-white/20 rounded-xl">
+        <div className="flex items-center gap-3 p-4 bg-white/10 border border-white/20 rounded-xl">
             <div
                 onClick={onToggle}
                 className={`w-5 h-5 rounded border-2 flex items-center justify-center cursor-pointer transition-all duration-200 flex-shrink-0 ${
