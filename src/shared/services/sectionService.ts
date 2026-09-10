@@ -25,8 +25,7 @@ export const sectionService = {
 
     async create(data: NewSection): Promise<Section> {
         const db = await getDb();
-        db.insert(schema.sections).values(data).run();
-        return this.getById(data.id) as Promise<Section>;
+        return db.insert(schema.sections).values(data).returning().get();
     },
 
     async update(id: string, data: Partial<NewSection>): Promise<Section | undefined> {

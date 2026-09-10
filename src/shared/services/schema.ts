@@ -1,12 +1,16 @@
 import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core';
 
+function guid(): string {
+    return crypto.randomUUID();
+}
+
 export const tags = sqliteTable('tags', {
-    id: text('id').primaryKey(),
+    id: text('id').$defaultFn(guid).primaryKey(),
     name: text('name').notNull(),
 });
 
 export const projects = sqliteTable('projects', {
-    id: text('id').primaryKey(),
+    id: text('id').$defaultFn(guid).primaryKey(),
     name: text('name').notNull(),
     description: text('description').notNull(),
     creationDate: integer('creation_date', { mode: 'timestamp' }).notNull(),
@@ -14,7 +18,7 @@ export const projects = sqliteTable('projects', {
 });
 
 export const sections = sqliteTable('sections', {
-    id: text('id').primaryKey(),
+    id: text('id').$defaultFn(guid).primaryKey(),
     name: text('name').notNull(),
     description: text('description').notNull(),
     creationDate: integer('creation_date', { mode: 'timestamp' }).notNull(),
@@ -23,7 +27,7 @@ export const sections = sqliteTable('sections', {
 });
 
 export const tasks = sqliteTable('tasks', {
-    id: text('id').primaryKey(),
+    id: text('id').$defaultFn(guid).primaryKey(),
     name: text('name').notNull(),
     description: text('description').notNull(),
     isCompleted: integer('is_completed', { mode: 'boolean' }).notNull().default(false),
@@ -36,16 +40,16 @@ export const tasks = sqliteTable('tasks', {
 export const taskTags = sqliteTable('task_tags', {
     taskId: text('task_id').notNull().references(() => tasks.id),
     tagId: text('tag_id').notNull().references(() => tags.id),
-}, (table) => ({
-    pk: primaryKey({ columns: [table.taskId, table.tagId] }),
-}));
+}, (table) => [
+    primaryKey({ columns: [table.taskId, table.tagId] }),
+]);
 
 export const taskRelations = sqliteTable('task_relations', {
     taskId: text('task_id').notNull().references(() => tasks.id),
     relatedTaskId: text('related_task_id').notNull().references(() => tasks.id),
-}, (table) => ({
-    pk: primaryKey({ columns: [table.taskId, table.relatedTaskId] }),
-}));
+}, (table) => [
+    primaryKey({ columns: [table.taskId, table.relatedTaskId] }),
+]);
 
 export type Tag = typeof tags.$inferSelect;
 export type NewTag = typeof tags.$inferInsert;

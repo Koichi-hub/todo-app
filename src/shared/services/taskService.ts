@@ -20,8 +20,7 @@ export const taskService = {
 
     async create(data: NewTask): Promise<Task> {
         const db = await getDb();
-        db.insert(schema.tasks).values(data).run();
-        return this.getById(data.id) as Promise<Task>;
+        return db.insert(schema.tasks).values(data).returning().get();
     },
 
     async update(id: string, data: Partial<NewTask>): Promise<Task | undefined> {

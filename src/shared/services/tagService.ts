@@ -16,8 +16,7 @@ export const tagService = {
 
     async create(data: NewTag): Promise<Tag> {
         const db = await getDb();
-        db.insert(schema.tags).values(data).run();
-        return this.getById(data.id) as Promise<Tag>;
+        return db.insert(schema.tags).values(data).returning().get();
     },
 
     async update(id: string, data: Partial<NewTag>): Promise<Tag | undefined> {

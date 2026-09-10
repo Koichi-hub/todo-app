@@ -20,8 +20,7 @@ export const projectService = {
 
     async create(data: NewProject): Promise<Project> {
         const db = await getDb();
-        db.insert(schema.projects).values(data).run();
-        return this.getById(data.id) as Promise<Project>;
+        return db.insert(schema.projects).values(data).returning().get();
     },
 
     async update(id: string, data: Partial<NewProject>): Promise<Project | undefined> {
