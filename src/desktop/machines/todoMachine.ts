@@ -1,14 +1,15 @@
 import { setup, assign } from 'xstate'
 import { Todo } from '../../shared/types/Todo';
 
-type AddEvent = { type: 'ADD'; text: string }
+type AddEvent = { type: 'ADD'; text: string; date?: string }
 type ToggleEvent = { type: 'TOGGLE'; id: string }
 type DeleteEvent = { type: 'DELETE'; id: string }
 type DeleteAllCompletedEvent = { type: 'DELETE_ALL_COMPLETED' }
 type SetInputEvent = { type: 'SET_INPUT'; text: string }
-type ReorderEvent = { type: 'REORDER'; oldIndex: number; newIndex: number }
+type ReorderEvent = { type: 'REORDER'; oldIndex: number; newIndex: number; date?: string }
 type TasksLoadedEvent = { type: 'TASKS_LOADED', todos: Todo[] }
-type TodoEvent = AddEvent | ToggleEvent | DeleteEvent | DeleteAllCompletedEvent | SetInputEvent | ReorderEvent | TasksLoadedEvent
+type MoveToDayEvent = { type: 'MOVE_TO_DAY'; id: string; date: string }
+type TodoEvent = AddEvent | ToggleEvent | DeleteEvent | DeleteAllCompletedEvent | SetInputEvent | ReorderEvent | TasksLoadedEvent | MoveToDayEvent
 
 export const machine = setup({
   types: {
@@ -27,6 +28,7 @@ export const machine = setup({
             id: crypto.randomUUID(),
             text: event.text,
             completed: false,
+            date: event.date ?? new Date().toISOString().split('T')[0],
           },
         ]
       },
@@ -49,6 +51,14 @@ export const machine = setup({
       todos: ({ context, event }) => {
         if (event.type !== 'DELETE_ALL_COMPLETED') return context.todos
         return context.todos.filter((todo) => !todo.completed)
+      },
+    }),
+    moveToDay: assign({
+      todos: ({ context, event }) => {
+        if (event.type !== 'MOVE_TO_DAY') return context.todos
+        return context.todos.map((todo) =>
+          todo.id === event.id ? { ...todo, date: event.date } : todo
+        )
       },
     }),
     reorderTodos: assign({
@@ -95,6 +105,9 @@ export const machine = setup({
         },
         REORDER: {
           actions: 'reorderTodos',
+        },
+        MOVE_TO_DAY: {
+          actions: 'moveToDay',
         },
       },
     },

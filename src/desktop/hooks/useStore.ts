@@ -18,8 +18,8 @@ export function useStore<T>(key: string, onLoad: (value: T) => void): [(value: T
     const load = async () => {
       try {
         const value = await store.get<T>(key)
-        if (isMountedRef.current && value !== undefined) {
-          onLoad(value)
+        if (isMountedRef.current) {
+          onLoad(value ?? ([] as T))
           isLoadedRef.current = true
         }
       } catch {}

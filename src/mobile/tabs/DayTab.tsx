@@ -1,17 +1,6 @@
-import {
-    DndContext,
-    PointerSensor,
-    useSensor,
-    useSensors,
-    type DragEndEvent,
-} from '@dnd-kit/core'
-import {
-    SortableContext,
-    verticalListSortingStrategy
-} from '@dnd-kit/sortable'
 import { useMachine } from '@xstate/react'
 import { useEffect, useState } from 'react'
-import SortableTodo from '../components/SortableTodo'
+import TodoItem from '../components/TodoItem'
 import Modal from '../components/Modal'
 import { useStore } from '../../desktop/hooks/useStore'
 import { machine } from '../../desktop/machines/todoMachine'
@@ -20,14 +9,6 @@ import { Todo } from '../../shared/types/Todo'
 import Button from '../components/Button'
 
 export default function DayTab() {
-    const sensors = useSensors(
-        useSensor(PointerSensor, {
-            activationConstraint: {
-                distance: 10,
-            },
-        })
-    )
-
     const [save] = useStore<Todo[]>(STORAGE_KEY, (todos) => {
         if (todos.length === 0) {
             send({ type: 'TASKS_LOADED', todos: [] })
@@ -45,22 +26,12 @@ export default function DayTab() {
         }
     }, [snapshot.context.todos])
 
+    const today = new Date().toISOString().split('T')[0]
+
     const handleAdd = () => {
         if (input.trim()) {
-            send({ type: 'ADD', text: input })
+            send({ type: 'ADD', text: input, date: today })
             setInput('')
-        }
-    }
-
-    const handleDragEnd = (event: DragEndEvent) => {
-        const { active, over } = event
-        if (over && active.id !== over.id) {
-            const list = event.active.data.current?.listType === 'complete'
-                ? snapshot.context.todos.filter((t) => t.completed)
-                : snapshot.context.todos.filter((t) => !t.completed)
-            const oldIndex = list.findIndex((t) => t.id === active.id)
-            const newIndex = list.findIndex((t) => t.id === over.id)
-            send({ type: 'REORDER', oldIndex, newIndex })
         }
     }
 
@@ -68,10 +39,10 @@ export default function DayTab() {
     const complete = snapshot.context.todos.filter((t) => t.completed)
 
     return (
-        <div className="flex flex-col items-center gap-2">
-            <h1 className="text-white text-[20px] font-bold">Задачи на сегодня</h1>
+        <div className="flex flex-col items-center gap-2 h-full">
+            <h1 className="text-white text-[20px] font-bold flex-shrink-0">Задачи на сегодня</h1>
 
-            <div className="flex gap-2 w-full">
+            <div className="flex gap-2 w-full flex-shrink-0">
                 <input
                     type="text"
                     value={input}
@@ -83,56 +54,67 @@ export default function DayTab() {
                 <Button onClick={handleAdd}>+</Button>
             </div>
 
-            <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+            <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar w-full">
                 <div className="w-full mt-2">
                     <h2 className="text-white font-bold text-[16px]">Ждут выполнения</h2>
                     <div className="mt-1">
-                        <SortableContext items={incomplete.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-                            <div className="space-y-1">
-                                {incomplete.length === 0 ? (
-                                    <p className="text-white/50 text-sm italic">Нет задач</p>
-                                ) : (
-                                    incomplete.map((todo) => (
-                                        <SortableTodo
-                                            key={todo.id}
-                                            todo={todo}
-                                            listType="incomplete"
-                                            onToggle={() => send({ type: 'TOGGLE', id: todo.id })}
-                                            onEdit={() => setIsModalOpen(true)}
-                                        />
-                                    ))
-                                )}
-                            </div>
-                        </SortableContext>
+                        <div className="space-y-1">
+                            {incomplete.length === 0 ? (
+                                <p className="text-white/50 text-sm italic">Нет задач</p>
+                            ) : (
+                                incomplete.map((todo) => (
+                                    <TodoItem
+                                        key={todo.id}
+                                        todo={todo}
+                                        onToggle={() => send({ type: 'TOGGLE', id: todo.id })}
+                                        onEdit={() => setIsModalOpen(true)}
+                                    />
+                                ))
+                            )}
+                        </div>
                     </div>
                 </div>
 
-                <div className="w-full mt-4">
+                <div className="w-full mt-4 pb-2">
                     <h2 className="text-white font-bold text-[16px]">Выполнены</h2>
                     <div className="mt-1">
-                        <SortableContext items={complete.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-                            <div className="space-y-1">
-                                {complete.length === 0 ? (
-                                    <p className="text-white/50 text-sm italic">Нет выполненных</p>
-                                ) : (
-                                    complete.map((todo) => (
-                                        <SortableTodo
-                                            key={todo.id}
-                                            todo={todo}
-                                            listType="complete"
-                                            onToggle={() => send({ type: 'TOGGLE', id: todo.id })}
-                                            onEdit={() => setIsModalOpen(true)}
-                                        />
-                                    ))
-                                )}
-                            </div>
-                        </SortableContext>
+                        <div className="space-y-1">
+                            {complete.length === 0 ? (
+                                <p className="text-white/50 text-sm italic">Нет выполненных</p>
+                            ) : (
+                                complete.map((todo) => (
+                                    <TodoItem
+                                        key={todo.id}
+                                        todo={todo}
+                                        onToggle={() => send({ type: 'TOGGLE', id: todo.id })}
+                                        onEdit={() => setIsModalOpen(true)}
+                                    />
+                                ))
+                            )}
+                        </div>
                     </div>
                 </div>
-            </DndContext>
+            </div>
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
                 <h2 className="text-white text-lg font-bold mb-4">Редактирование</h2>
             </Modal>
+
+            <style>{`
+                .custom-scrollbar::-webkit-scrollbar {
+                    width: 6px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                    background: rgba(255, 255, 255, 0.05);
+                    border-radius: 3px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background: rgba(255, 255, 255, 0.15);
+                    border-radius: 3px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: rgba(255, 255, 255, 0.25);
+                }
+            `}</style>
         </div>
     );
 }

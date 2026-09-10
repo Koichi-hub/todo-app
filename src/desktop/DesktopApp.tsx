@@ -1,14 +1,6 @@
-import {
-  DndContext,
-  type DragEndEvent,
-} from '@dnd-kit/core'
-import {
-  SortableContext,
-  verticalListSortingStrategy
-} from '@dnd-kit/sortable'
 import { useMachine } from '@xstate/react'
 import { useEffect, useState } from 'react'
-import SortableTodo from './components/SortableTodo'
+import TodoItem from './components/TodoItem'
 import { useStore } from './hooks/useStore'
 import { machine } from './machines/todoMachine'
 import { STORAGE_KEY } from '../shared/misc/constants'
@@ -27,15 +19,6 @@ export default function DesktopApp() {
         if (input.trim()) {
             send({ type: 'ADD', text: input })
             setInput('')
-        }
-    }
-
-    const handleDragEnd = (event: DragEndEvent) => {
-        const { active, over } = event
-        if (over && active.id !== over.id) {
-            const oldIndex = snapshot.context.todos.findIndex((t) => t.id === active.id)
-            const newIndex = snapshot.context.todos.findIndex((t) => t.id === over.id)
-            send({ type: 'REORDER', oldIndex, newIndex })
         }
     }
 
@@ -63,45 +46,39 @@ export default function DesktopApp() {
                     </button>
                 </div>
 
-                <DndContext onDragEnd={handleDragEnd}>
-                    {(() => {
-                        const incomplete = snapshot.context.todos.filter((t) => !t.completed)
-                        const complete = snapshot.context.todos.filter((t) => t.completed)
-                        return (
-                            <>
-                                <h2 className="text-xl font-semibold text-white/80 mb-3">Ждут выполнения</h2>
-                                <SortableContext items={incomplete.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-                                    <div className="space-y-3 mb-6">
-                                        {incomplete.map((todo) => (
-                                            <SortableTodo
-                                                key={todo.id}
-                                                todo={todo}
-                                                onToggle={() => send({ type: 'TOGGLE', id: todo.id })}
-                                                onDelete={() => send({ type: 'DELETE', id: todo.id })}
-                                            />
-                                        ))}
-                                    </div>
-                                </SortableContext>
+                {(() => {
+                    const incomplete = snapshot.context.todos.filter((t) => !t.completed)
+                    const complete = snapshot.context.todos.filter((t) => t.completed)
+                    return (
+                        <>
+                            <h2 className="text-xl font-semibold text-white/80 mb-3">Ждут выполнения</h2>
+                            <div className="space-y-3 mb-6">
+                                {incomplete.map((todo) => (
+                                    <TodoItem
+                                        key={todo.id}
+                                        todo={todo}
+                                        onToggle={() => send({ type: 'TOGGLE', id: todo.id })}
+                                        onDelete={() => send({ type: 'DELETE', id: todo.id })}
+                                    />
+                                ))}
+                            </div>
 
-                                <h2 className="text-xl font-semibold inline-flex items-center text-white/80 mb-3">
-                                    Выполнены
-                                </h2>
-                                <SortableContext items={complete.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-                                    <div className="space-y-3">
-                                        {complete.map((todo) => (
-                                            <SortableTodo
-                                                key={todo.id}
-                                                todo={todo}
-                                                onToggle={() => send({ type: 'TOGGLE', id: todo.id })}
-                                                onDelete={() => send({ type: 'DELETE', id: todo.id })}
-                                            />
-                                        ))}
-                                    </div>
-                                </SortableContext>
-                            </>
-                        )
-                    })()}
-                </DndContext>
+                            <h2 className="text-xl font-semibold inline-flex items-center text-white/80 mb-3">
+                                Выполнены
+                            </h2>
+                            <div className="space-y-3">
+                                {complete.map((todo) => (
+                                    <TodoItem
+                                        key={todo.id}
+                                        todo={todo}
+                                        onToggle={() => send({ type: 'TOGGLE', id: todo.id })}
+                                        onDelete={() => send({ type: 'DELETE', id: todo.id })}
+                                    />
+                                ))}
+                            </div>
+                        </>
+                    )
+                })()}
             </div>
         </div>
     )

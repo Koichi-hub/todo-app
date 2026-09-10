@@ -1,32 +1,15 @@
-import { useSortable } from '@dnd-kit/sortable'
 import { Todo } from '../../shared/types/Todo'
 
-interface SortableTodoProps {
+interface TodoItemProps {
     todo: Todo
-    listType: 'incomplete' | 'complete'
     onToggle: () => void
     onEdit: () => void
 }
 
-export default function SortableTodo({ todo, listType, onToggle, onEdit }: SortableTodoProps) {
-    const { listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-        id: todo.id,
-        data: { listType },
-    })
-
-    const style = {
-        transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
-        transition: isDragging ? 'none' : transition,
-        opacity: isDragging ? 0.5 : 1,
-        zIndex: isDragging ? 1000 : undefined,
-    }
-
+export default function TodoItem({ todo, onToggle, onEdit }: TodoItemProps) {
     return (
         <div
-            ref={setNodeRef}
-            style={style}
-            {...listeners}
-            className="flex items-center gap-3 p-3 bg-white/10 border border-white/20 rounded-xl touch-none"
+            className="flex items-center gap-3 p-3 bg-white/10 border border-white/20 rounded-xl"
         >
             <div
                 onClick={onToggle}
