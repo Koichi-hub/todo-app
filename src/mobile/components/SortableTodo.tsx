@@ -10,7 +10,7 @@ interface SortableTodoProps {
 export default function SortableTodo({ todo, listType, onToggle }: SortableTodoProps) {
     const { listeners, setNodeRef, transform, transition, isDragging } = useSortable({
         id: todo.id,
-        data: { listType }
+        data: { listType },
     })
 
     const style = {
@@ -24,14 +24,9 @@ export default function SortableTodo({ todo, listType, onToggle }: SortableTodoP
         <div
             ref={setNodeRef}
             style={style}
-            className="flex items-center gap-3 p-3 bg-white/10 border border-white/20 rounded-xl"
+            {...listeners}
+            className="flex items-center gap-3 p-3 bg-white/10 border border-white/20 rounded-xl touch-none"
         >
-            <div
-                {...listeners}
-                className="cursor-grab active:cursor-grabbing text-white/40 hover:text-white/60"
-            >
-                ⋮⋮
-            </div>
             <div
                 onClick={onToggle}
                 className={`w-5 h-5 rounded border-2 flex items-center justify-center cursor-pointer transition-all duration-200 flex-shrink-0 ${
@@ -49,7 +44,10 @@ export default function SortableTodo({ todo, listType, onToggle }: SortableTodoP
             <span className={`flex-1 ${todo.completed ? 'text-white/60 line-through' : 'text-white'}`}>
                 {todo.text}
             </span>
-            <button className="text-white/50 hover:text-white/80 transition-colors duration-200 flex-shrink-0">
+            <button
+                onClick={(e) => e.stopPropagation()}
+                className="text-white/50 hover:text-white/80 transition-colors duration-200 flex-shrink-0"
+            >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
