@@ -1,1 +1,2 @@
-@import "tailwindcss";
+@import "tailwindcss"; /* Или старый синтаксис @tailwind base; @tailwind components; @tailwind utilities; в зависимости от версии Tailwind */
+
