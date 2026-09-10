@@ -1,18 +1,17 @@
-import { useMachine } from '@xstate/react'
 import { useState } from 'react'
 import { TodoItem } from '../../shared/components'
 import { Modal } from '../components'
-import { machine } from '../../shared/machines'
+import { useMachineContext } from '../../shared/machines'
 import { DAY_NAMES, getDateKey, getWeekDates } from '../../shared/misc'
 
 export default function WeekTab() {
+    const { snapshot, send } = useMachineContext()
+    const [isModalOpen, setIsModalOpen] = useState(false)
+
     const now = new Date()
     const weekDates = getWeekDates(now)
     const weekStart = weekDates[0]
     const weekEnd = weekDates[6]
-
-    const [snapshot, send] = useMachine(machine)
-    const [isModalOpen, setIsModalOpen] = useState(false)
 
     const formatDate = (date: Date): string => {
         const day = String(date.getDate()).padStart(2, '0')

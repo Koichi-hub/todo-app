@@ -1,7 +1,9 @@
 import { useState } from "react"
+import { useMachine } from '@xstate/react'
 import MobileLayout from "./MobileLayout"
 import { DayTab, WeekTab, ProjectsTab, OverviewTab } from "./tabs"
 import { TABS, type TabId } from "./misc"
+import { machine, MachineContext } from "../shared/machines"
 
 const tabComponents: Record<TabId, React.ComponentType> = {
     day: DayTab,
@@ -13,10 +15,12 @@ const tabComponents: Record<TabId, React.ComponentType> = {
 export default function MobileApp() {
     const [activeTab, setActiveTab] = useState<TabId>("day")
     const [pressingTab, setPressingTab] = useState<TabId | null>(null)
+    const [snapshot, send] = useMachine(machine)
 
     const ActiveTabComponent = tabComponents[activeTab]
 
     return (
+        <MachineContext.Provider value={{ snapshot, send }}>
         <MobileLayout
             nav={
                 <nav className="flex items-center justify-center gap-4 rounded-2xl border border-white/20 bg-white/10 p-2">
@@ -55,5 +59,6 @@ export default function MobileApp() {
                 </div>
             </div>
         </MobileLayout>
+        </MachineContext.Provider>
     )
 }

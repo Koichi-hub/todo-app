@@ -1,11 +1,10 @@
-import { useMachine } from '@xstate/react'
 import { useState } from 'react'
 import { TodoItem } from '../../shared/components'
 import { Modal, Button } from '../components'
-import { machine } from '../../shared/machines'
+import { useMachineContext } from '../../shared/machines'
 
 export default function DayTab() {
-    const [snapshot, send] = useMachine(machine)
+    const { snapshot, send } = useMachineContext()
     const [input, setInput] = useState('')
     const [isModalOpen, setIsModalOpen] = useState(false)
 
