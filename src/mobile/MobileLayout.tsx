@@ -1,9 +1,5 @@
+import type { MobileLayoutProps } from './types'
 import './MobileLayout.css'
-
-interface MobileLayoutProps {
-    children: React.ReactNode;
-    nav: React.ReactNode;
-}
 
 export default function MobileLayout({ children, nav }: MobileLayoutProps) {
     return (
@@ -13,5 +9,5 @@ export default function MobileLayout({ children, nav }: MobileLayoutProps) {
                 {nav}
             </div>
         </div>
-    );
+    )
 }

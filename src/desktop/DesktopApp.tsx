@@ -1,10 +1,10 @@
 import { useMachine } from '@xstate/react'
 import { useEffect, useState } from 'react'
-import TodoItem from './components/TodoItem'
-import { useStore } from './hooks/useStore'
-import { machine } from './machines/todoMachine'
-import { STORAGE_KEY } from '../shared/misc/constants'
-import { Todo } from '../shared/types/Todo'
+import { TodoItem } from './components'
+import { useStore } from '../shared/hooks'
+import { machine } from '../shared/machines'
+import { STORAGE_KEY } from '../shared/misc'
+import type { Todo } from '../shared/types'
 
 export default function DesktopApp() {
     const [save] = useStore<Todo[]>(STORAGE_KEY, (todos) => send({ type: 'TASKS_LOADED', todos }))

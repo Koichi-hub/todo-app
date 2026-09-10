@@ -1,37 +1,39 @@
-import { Todo } from "../../shared/types/Todo"
+import { Todo } from '../../shared/types'
 
-interface TodoItemProps {
-  todo: Todo
-  onToggle: () => void
-  onDelete: () => void
+export interface TodoItemProps {
+    todo: Todo
+    onToggle: () => void
+    onDelete: () => void
 }
 
 export default function TodoItem({ todo, onToggle, onDelete }: TodoItemProps) {
-  return (
-    <div
-      className={`flex items-center gap-4 p-4 bg-white/5 rounded-xl border border-white/10 transition-all duration-200`}
-    >
-      <div
-        onClick={onToggle}
-        className={`w-5 h-5 rounded-full border-2 cursor-pointer transition-all duration-200 ${
-          todo.completed
-            ? 'border-emerald-500 bg-emerald-500/20'
-            : 'border-white/30'
-        }`}
-      />
-      <span
-        className={`flex-1 ${
-          todo.completed ? 'text-white/70 line-through' : 'text-white/90'
-        }`}
-      >
-        {todo.text}
-      </span>
-      <button
-        onClick={onDelete}
-        className="text-white/50 hover:text-red-400 transition-colors duration-200"
-      >
-        ✕
-      </button>
-    </div>
-  )
+    return (
+        <div
+            className={`flex items-center gap-4 p-4 bg-white/5 rounded-xl border border-white/10 transition-all duration-200`}
+        >
+            <div
+                onClick={onToggle}
+                className={`w-5 h-5 rounded-full border-2 cursor-pointer transition-all duration-200 ${
+                    todo.completed
+                        ? 'border-emerald-500 bg-emerald-500/20'
+                        : 'border-white/30'
+                }`}
+            />
+            <span
+                className={`flex-1 ${
+                    todo.completed ? 'text-white/70 line-through' : 'text-white/90'
+                }`}
+            >
+                {todo.text}
+            </span>
+            <button
+                onClick={onDelete}
+                className="text-white/50 hover:text-red-400 transition-colors duration-200"
+            >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+    )
 }

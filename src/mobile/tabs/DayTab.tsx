@@ -1,12 +1,11 @@
 import { useMachine } from '@xstate/react'
 import { useEffect, useState } from 'react'
-import TodoItem from '../components/TodoItem'
-import Modal from '../components/Modal'
-import { useStore } from '../../desktop/hooks/useStore'
-import { machine } from '../../desktop/machines/todoMachine'
-import { STORAGE_KEY } from '../../shared/misc/constants'
-import { Todo } from '../../shared/types/Todo'
-import Button from '../components/Button'
+import { TodoItem } from '../../shared/components'
+import { Modal, Button } from '../components'
+import { useStore } from '../../shared/hooks'
+import { machine } from '../../shared/machines'
+import { STORAGE_KEY } from '../../shared/misc'
+import type { Todo } from '../../shared/types'
 
 export default function DayTab() {
     const [save] = useStore<Todo[]>(STORAGE_KEY, (todos) => {
@@ -67,7 +66,8 @@ export default function DayTab() {
                                         key={todo.id}
                                         todo={todo}
                                         onToggle={() => send({ type: 'TOGGLE', id: todo.id })}
-                                        onEdit={() => setIsModalOpen(true)}
+                                        onAction={() => setIsModalOpen(true)}
+                                        actionType="edit"
                                     />
                                 ))
                             )}
@@ -87,7 +87,8 @@ export default function DayTab() {
                                         key={todo.id}
                                         todo={todo}
                                         onToggle={() => send({ type: 'TOGGLE', id: todo.id })}
-                                        onEdit={() => setIsModalOpen(true)}
+                                        onAction={() => setIsModalOpen(true)}
+                                        actionType="edit"
                                     />
                                 ))
                             )}
@@ -116,5 +117,5 @@ export default function DayTab() {
                 }
             `}</style>
         </div>
-    );
+    )
 }

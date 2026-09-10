@@ -1,37 +1,11 @@
 import { useMachine } from '@xstate/react'
 import { useEffect, useState, useRef } from 'react'
-import TodoItem from '../components/TodoItem'
-import Modal from '../components/Modal'
-import { useStore } from '../../desktop/hooks/useStore'
-import { machine } from '../../desktop/machines/todoMachine'
-import { STORAGE_KEY } from '../../shared/misc/constants'
-import { Todo } from '../../shared/types/Todo'
-
-const DAY_NAMES = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
-
-function formatDate(date: Date): string {
-    const day = String(date.getDate()).padStart(2, '0')
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    return `${day}.${month}`
-}
-
-function getWeekDates(date: Date): Date[] {
-    const start = new Date(date)
-    const day = start.getDay()
-    const diff = day === 0 ? -6 : 1 - day
-    start.setDate(start.getDate() + diff)
-    const dates: Date[] = []
-    for (let i = 0; i < 7; i++) {
-        const d = new Date(start)
-        d.setDate(start.getDate() + i)
-        dates.push(d)
-    }
-    return dates
-}
-
-function getDateKey(date: Date): string {
-    return date.toISOString().split('T')[0]
-}
+import { TodoItem } from '../../shared/components'
+import { Modal } from '../components'
+import { useStore } from '../../shared/hooks'
+import { machine } from '../../shared/machines'
+import { STORAGE_KEY, DAY_NAMES, getDateKey, getWeekDates } from '../../shared/misc'
+import type { Todo } from '../../shared/types'
 
 export default function WeekTab() {
     const now = new Date()
@@ -76,6 +50,12 @@ export default function WeekTab() {
             save(snapshot.context.todos)
         }
     }, [snapshot.context.todos])
+
+    const formatDate = (date: Date): string => {
+        const day = String(date.getDate()).padStart(2, '0')
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        return `${day}.${month}`
+    }
 
     const todosByDate = weekDates.map(date => {
         const dateKey = getDateKey(date)
@@ -123,7 +103,8 @@ export default function WeekTab() {
                                                 key={todo.id}
                                                 todo={todo}
                                                 onToggle={() => send({ type: 'TOGGLE', id: todo.id })}
-                                                onEdit={() => setIsModalOpen(true)}
+                                                onAction={() => setIsModalOpen(true)}
+                                                actionType="edit"
                                             />
                                         ))
                                     )}

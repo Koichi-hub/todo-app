@@ -1,6 +1,4 @@
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-    children: React.ReactNode;
-}
+import type { ButtonProps } from '../types'
 
 export default function Button({ children, onClick, ...props }: ButtonProps) {
     return (
@@ -11,5 +9,5 @@ export default function Button({ children, onClick, ...props }: ButtonProps) {
         >
             {children}
         </button>
-    );
+    )
 }

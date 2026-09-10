@@ -1,41 +1,36 @@
-import { useEffect, useRef } from "react";
-
-interface ModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    children: React.ReactNode;
-}
+import { useEffect, useRef } from "react"
+import type { ModalProps } from '../types'
 
 export default function Modal({ isOpen, onClose, children }: ModalProps) {
-    const overlayRef = useRef<HTMLDivElement>(null);
+    const overlayRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
-        if (!isOpen) return;
+        if (!isOpen) return
 
         const handleClick = (e: MouseEvent) => {
             if (overlayRef.current === e.target) {
-                onClose();
+                onClose()
             }
-        };
+        }
 
         const handleBackButton = () => {
-            onClose();
-        };
+            onClose()
+        }
 
-        document.addEventListener("mousedown", handleClick);
-        window.addEventListener("popstate", handleBackButton);
+        document.addEventListener("mousedown", handleClick)
+        window.addEventListener("popstate", handleBackButton)
 
         if (isOpen) {
-            history.pushState(null, "", location.href);
+            history.pushState(null, "", location.href)
         }
 
         return () => {
-            document.removeEventListener("mousedown", handleClick);
-            window.removeEventListener("popstate", handleBackButton);
-        };
-    }, [isOpen, onClose]);
+            document.removeEventListener("mousedown", handleClick)
+            window.removeEventListener("popstate", handleBackButton)
+        }
+    }, [isOpen, onClose])
 
-    if (!isOpen) return null;
+    if (!isOpen) return null
 
     return (
         <div
@@ -52,5 +47,5 @@ export default function Modal({ isOpen, onClose, children }: ModalProps) {
                 {children}
             </div>
         </div>
-    );
+    )
 }
