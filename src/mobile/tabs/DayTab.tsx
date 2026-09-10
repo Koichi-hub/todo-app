@@ -12,6 +12,7 @@ import {
 import { useMachine } from '@xstate/react'
 import { useEffect, useState } from 'react'
 import SortableTodo from '../components/SortableTodo'
+import Modal from '../components/Modal'
 import { useStore } from '../../desktop/hooks/useStore'
 import { machine } from '../../desktop/machines/todoMachine'
 import { STORAGE_KEY } from '../../shared/misc/constants'
@@ -36,6 +37,7 @@ export default function DayTab() {
     })
     const [snapshot, send] = useMachine(machine)
     const [input, setInput] = useState('')
+    const [isModalOpen, setIsModalOpen] = useState(false)
 
     useEffect(() => {
         if (snapshot.context.todos.length > 0) {
@@ -96,6 +98,7 @@ export default function DayTab() {
                                             todo={todo}
                                             listType="incomplete"
                                             onToggle={() => send({ type: 'TOGGLE', id: todo.id })}
+                                            onEdit={() => setIsModalOpen(true)}
                                         />
                                     ))
                                 )}
@@ -118,6 +121,7 @@ export default function DayTab() {
                                             todo={todo}
                                             listType="complete"
                                             onToggle={() => send({ type: 'TOGGLE', id: todo.id })}
+                                            onEdit={() => setIsModalOpen(true)}
                                         />
                                     ))
                                 )}
@@ -126,6 +130,9 @@ export default function DayTab() {
                     </div>
                 </div>
             </DndContext>
+            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+                <h2 className="text-white text-lg font-bold mb-4">Редактирование</h2>
+            </Modal>
         </div>
     );
 }
