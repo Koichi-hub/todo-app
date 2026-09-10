@@ -1,12 +1,12 @@
 import { createContext, useContext } from 'react'
 import type { SnapshotFrom } from 'xstate'
-import type { machine, TodoEvent } from './todoMachine'
+import type { machine, TodoEvent, ProjectEvent } from './todoMachine'
 
 export type MachineSnapshot = SnapshotFrom<typeof machine>
 
 export type MachineContextType = {
     snapshot: MachineSnapshot
-    send: (event: TodoEvent) => void
+    send: (event: TodoEvent | ProjectEvent) => void
 }
 
 export const MachineContext = createContext<MachineContextType | null>(null)

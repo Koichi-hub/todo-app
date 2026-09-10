@@ -1,9 +1,24 @@
 import { setup, assign, fromPromise } from 'xstate'
 import { taskService } from '../services/taskService'
+import { projectService } from '../services/projectService'
 import type { TodoEvent, TodoContext, Todo } from '../types'
 import type { NewTask } from '../services/schema'
+import type { Project } from '../services/schema'
 
-export { type TodoEvent, type TodoContext }
+type ProjectContext = {
+    projects: Project[]
+}
+
+type CombinedContext = TodoContext & ProjectContext
+
+export { type TodoEvent, type TodoContext, type ProjectContext }
+
+type ProjectEvent =
+    | { type: 'LOAD_PROJECTS' }
+    | { type: 'ADD_PROJECT'; name: string }
+    | { type: 'PROJECTS_LOADED'; projects: Project[] }
+
+export { type ProjectEvent }
 
 function todoToTask(todo: Todo): NewTask {
     return {
@@ -32,10 +47,15 @@ const loadTodosLogic = fromPromise(async () => {
     return tasks.map((t: any) => taskToTodo(t))
 })
 
+const loadProjectsLogic = fromPromise(async () => {
+    const projects = await projectService.getAll()
+    return projects
+})
+
 export const machine = setup({
     types: {
-        context: {} as TodoContext,
-        events: {} as TodoEvent,
+        context: {} as TodoContext & ProjectContext,
+        events: {} as TodoEvent | ProjectEvent,
     },
     actions: {
         loadTodos: assign({
@@ -45,7 +65,7 @@ export const machine = setup({
             }
         }),
         addTodo: assign({
-            todos: ({ context, event }: { context: TodoContext; event: any }) => {
+            todos: ({ context, event }: { context: CombinedContext; event: any }) => {
                 if (event.type !== 'ADD') return context.todos
                 const newTodo: Todo = {
                     id: crypto.randomUUID(),
@@ -58,7 +78,7 @@ export const machine = setup({
             },
         }),
         toggleTodo: assign({
-            todos: ({ context, event }: { context: TodoContext; event: any }) => {
+            todos: ({ context, event }: { context: CombinedContext; event: any }) => {
                 if (event.type !== 'TOGGLE') return context.todos
                 const updatedTodos = context.todos.map((todo: Todo) =>
                     todo.id === event.id ? { ...todo, completed: !todo.completed } : todo
@@ -71,14 +91,14 @@ export const machine = setup({
             },
         }),
         deleteTodo: assign({
-            todos: ({ context, event }: { context: TodoContext; event: any }) => {
+            todos: ({ context, event }: { context: CombinedContext; event: any }) => {
                 if (event.type !== 'DELETE') return context.todos
                 taskService.delete(event.id)
                 return context.todos.filter((todo: Todo) => todo.id !== event.id)
             },
         }),
         deleteAllCompleted: assign({
-            todos: ({ context, event }: { context: TodoContext; event: any }) => {
+            todos: ({ context, event }: { context: CombinedContext; event: any }) => {
                 if (event.type !== 'DELETE_ALL_COMPLETED') return context.todos
                 const completedTodos = context.todos.filter((todo: Todo) => todo.completed)
                 completedTodos.forEach((todo: Todo) => taskService.delete(todo.id))
@@ -86,7 +106,7 @@ export const machine = setup({
             },
         }),
         moveToDay: assign({
-            todos: ({ context, event }: { context: TodoContext; event: any }) => {
+            todos: ({ context, event }: { context: CombinedContext; event: any }) => {
                 if (event.type !== 'MOVE_TO_DAY') return context.todos
                 const updatedTodos = context.todos.map((todo: Todo) =>
                     todo.id === event.id ? { ...todo, date: event.date } : todo
@@ -96,7 +116,7 @@ export const machine = setup({
             },
         }),
         reorderTodos: assign({
-            todos: ({ context, event }: { context: TodoContext; event: any }) => {
+            todos: ({ context, event }: { context: CombinedContext; event: any }) => {
                 if (event.type !== 'REORDER') return context.todos
                 const newTodos = [...context.todos]
                 const [removed] = newTodos.splice(event.oldIndex, 1)
@@ -104,15 +124,38 @@ export const machine = setup({
                 return newTodos
             },
         }),
+        loadProjects: assign({
+            projects: ({ event }: { event: any }) => {
+                if (event.type === 'PROJECTS_LOADED') return event.projects
+                return []
+            }
+        }),
+        addProject: assign({
+            projects: ({ context, event }: { context: CombinedContext; event: any }) => {
+                if (event.type !== 'ADD_PROJECT') return context.projects
+                const id = crypto.randomUUID()
+                const newProject: Project = {
+                    id,
+                    name: event.name,
+                    description: '',
+                    creationDate: new Date(),
+                    tagId: null,
+                }
+                projectService.create(newProject)
+                return [...context.projects, newProject]
+            },
+        }),
     },
     actors: {
         loadTodosActor: loadTodosLogic,
+        loadProjectsActor: loadProjectsLogic,
     },
 }).createMachine({
     id: 'todo',
     initial: 'loading',
     context: {
         todos: [],
+        projects: [],
     },
     states: {
         loading: {
@@ -146,6 +189,24 @@ export const machine = setup({
                 },
                 MOVE_TO_DAY: {
                     actions: 'moveToDay',
+                },
+                LOAD_PROJECTS: {
+                    target: 'loadingProjects',
+                },
+                ADD_PROJECT: {
+                    actions: 'addProject',
+                },
+            },
+        },
+        loadingProjects: {
+            invoke: {
+                src: 'loadProjectsActor',
+                onDone: {
+                    target: 'active',
+                    actions: [{ type: 'loadProjects', params: ({ event }: { event: any }) => ({ projects: event.output }) }],
+                },
+                onError: {
+                    target: 'active',
                 },
             },
         },

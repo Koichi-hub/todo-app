@@ -1,8 +1,16 @@
+import { useEffect } from 'react'
 import { AddItemInput, ProjectCard } from '../components'
+import { useMachineContext } from '../../shared/machines'
 
 export default function ProjectsTab() {
+    const { snapshot, send } = useMachineContext()
+
+    useEffect(() => {
+        send({ type: 'LOAD_PROJECTS' })
+    }, [send])
+
     const handleAdd = (value: string) => {
-        console.log('Create project:', value)
+        send({ type: 'ADD_PROJECT', name: value })
     }
 
     return (
@@ -13,16 +21,18 @@ export default function ProjectsTab() {
 
             <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar w-full mt-2">
                 <div className="space-y-2">
-                    <ProjectCard
-                        name="Мобильное приложение"
-                        description="Разработка кроссплатформенного приложения на React Native"
-                        createdAt={new Date(2026, 8, 1)}
-                    />
-                    <ProjectCard
-                        name="Веб-сайт портфолио"
-                        description="Создание персонального сайта с галереей работ"
-                        createdAt={new Date(2026, 8, 5)}
-                    />
+                    {snapshot.context.projects.length === 0 ? (
+                        <p className="text-white/50 text-sm italic">Нет проектов</p>
+                    ) : (
+                        snapshot.context.projects.map((project) => (
+                            <ProjectCard
+                                key={project.id}
+                                name={project.name}
+                                description={project.description}
+                                createdAt={project.creationDate}
+                            />
+                        ))
+                    )}
                 </div>
             </div>
 
