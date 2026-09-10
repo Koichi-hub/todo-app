@@ -1,19 +1,11 @@
 import { useMachine } from '@xstate/react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { TodoItem } from './components'
-import { useStore } from '../shared/hooks'
 import { machine } from '../shared/machines'
-import { STORAGE_KEY } from '../shared/misc'
-import type { Todo } from '../shared/types'
 
 export default function DesktopApp() {
-    const [save] = useStore<Todo[]>(STORAGE_KEY, (todos) => send({ type: 'TASKS_LOADED', todos }))
     const [snapshot, send] = useMachine(machine)
     const [input, setInput] = useState('')
-
-    useEffect(() => {
-        save(snapshot.context.todos)
-    }, [snapshot.context.todos])
 
     const handleAdd = () => {
         if (input.trim()) {

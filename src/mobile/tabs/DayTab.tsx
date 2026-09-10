@@ -1,29 +1,13 @@
 import { useMachine } from '@xstate/react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { TodoItem } from '../../shared/components'
 import { Modal, Button } from '../components'
-import { useStore } from '../../shared/hooks'
 import { machine } from '../../shared/machines'
-import { STORAGE_KEY } from '../../shared/misc'
-import type { Todo } from '../../shared/types'
 
 export default function DayTab() {
-    const [save] = useStore<Todo[]>(STORAGE_KEY, (todos) => {
-        if (todos.length === 0) {
-            send({ type: 'TASKS_LOADED', todos: [] })
-        } else {
-            send({ type: 'TASKS_LOADED', todos })
-        }
-    })
     const [snapshot, send] = useMachine(machine)
     const [input, setInput] = useState('')
     const [isModalOpen, setIsModalOpen] = useState(false)
-
-    useEffect(() => {
-        if (snapshot.context.todos.length > 0) {
-            save(snapshot.context.todos)
-        }
-    }, [snapshot.context.todos])
 
     const today = new Date().toISOString().split('T')[0]
 

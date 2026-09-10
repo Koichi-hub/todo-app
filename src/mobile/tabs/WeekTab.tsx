@@ -1,11 +1,9 @@
 import { useMachine } from '@xstate/react'
-import { useEffect, useState, useRef } from 'react'
+import { useState } from 'react'
 import { TodoItem } from '../../shared/components'
 import { Modal } from '../components'
-import { useStore } from '../../shared/hooks'
 import { machine } from '../../shared/machines'
-import { STORAGE_KEY, DAY_NAMES, getDateKey, getWeekDates } from '../../shared/misc'
-import type { Todo } from '../../shared/types'
+import { DAY_NAMES, getDateKey, getWeekDates } from '../../shared/misc'
 
 export default function WeekTab() {
     const now = new Date()
@@ -13,43 +11,8 @@ export default function WeekTab() {
     const weekStart = weekDates[0]
     const weekEnd = weekDates[6]
 
-    const [save] = useStore<Todo[]>(STORAGE_KEY, (todos) => {
-        if (!initRef.current) {
-            initRef.current = true
-            if (todos.length === 0) {
-                const sampleTodos: Todo[] = weekDates.flatMap((date, dayIndex) => {
-                    const dateKey = getDateKey(date)
-                    const tasks = [
-                        { text: `Задача ${dayIndex * 2 + 1}`, completed: false },
-                        { text: `Задача ${dayIndex * 2 + 2}`, completed: dayIndex % 2 === 0 },
-                    ]
-                    return tasks.map(t => ({
-                        id: crypto.randomUUID(),
-                        text: t.text,
-                        completed: t.completed,
-                        date: dateKey,
-                    }))
-                })
-                send({ type: 'TASKS_LOADED', todos: sampleTodos })
-            } else {
-                const today = getDateKey(now)
-                const migratedTodos = todos.map(t => ({
-                    ...t,
-                    date: t.date || today,
-                }))
-                send({ type: 'TASKS_LOADED', todos: migratedTodos })
-            }
-        }
-    })
     const [snapshot, send] = useMachine(machine)
     const [isModalOpen, setIsModalOpen] = useState(false)
-    const initRef = useRef(false)
-
-    useEffect(() => {
-        if (snapshot.context.todos.length > 0) {
-            save(snapshot.context.todos)
-        }
-    }, [snapshot.context.todos])
 
     const formatDate = (date: Date): string => {
         const day = String(date.getDate()).padStart(2, '0')

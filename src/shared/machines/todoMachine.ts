@@ -1,7 +1,36 @@
-import { setup, assign } from 'xstate'
-import type { TodoEvent, TodoContext } from '../types'
+import { setup, assign, fromPromise } from 'xstate'
+import { taskService } from '../services/taskService'
+import type { TodoEvent, TodoContext, Todo } from '../types'
+import type { NewTask } from '../services/schema'
 
 export { type TodoEvent, type TodoContext }
+
+function todoToTask(todo: Todo): NewTask {
+    return {
+        id: todo.id,
+        name: todo.text,
+        description: '',
+        isCompleted: todo.completed,
+        creationDate: new Date(),
+        placementDate: new Date(todo.date),
+        recordedTimeInSecs: 0,
+        sectionId: null,
+    }
+}
+
+function taskToTodo(task: { id: string; name: string; isCompleted: boolean; placementDate: Date | null }): Todo {
+    return {
+        id: task.id,
+        text: task.name,
+        completed: task.isCompleted,
+        date: task.placementDate ? task.placementDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+    }
+}
+
+const loadTodosLogic = fromPromise(async () => {
+    const tasks = await taskService.getAll()
+    return tasks.map((t: any) => taskToTodo(t))
+})
 
 export const machine = setup({
     types: {
@@ -9,50 +38,65 @@ export const machine = setup({
         events: {} as TodoEvent,
     },
     actions: {
+        loadTodos: assign({
+            todos: ({ event }: { event: any }) => {
+                if (event.type === 'TASKS_LOADED') return event.todos
+                return []
+            }
+        }),
         addTodo: assign({
-            todos: ({ context, event }) => {
+            todos: ({ context, event }: { context: TodoContext; event: any }) => {
                 if (event.type !== 'ADD') return context.todos
-                return [
-                    ...context.todos,
-                    {
-                        id: crypto.randomUUID(),
-                        text: event.text,
-                        completed: false,
-                        date: event.date ?? new Date().toISOString().split('T')[0],
-                    },
-                ]
+                const newTodo: Todo = {
+                    id: crypto.randomUUID(),
+                    text: event.text,
+                    completed: false,
+                    date: event.date ?? new Date().toISOString().split('T')[0],
+                }
+                taskService.create(todoToTask(newTodo))
+                return [...context.todos, newTodo]
             },
         }),
         toggleTodo: assign({
-            todos: ({ context, event }) => {
+            todos: ({ context, event }: { context: TodoContext; event: any }) => {
                 if (event.type !== 'TOGGLE') return context.todos
-                return context.todos.map((todo) =>
+                const updatedTodos = context.todos.map((todo: Todo) =>
                     todo.id === event.id ? { ...todo, completed: !todo.completed } : todo
                 )
+                const todo = context.todos.find((t: Todo) => t.id === event.id)
+                if (todo) {
+                    taskService.update(event.id, { isCompleted: !todo.completed })
+                }
+                return updatedTodos
             },
         }),
         deleteTodo: assign({
-            todos: ({ context, event }) => {
+            todos: ({ context, event }: { context: TodoContext; event: any }) => {
                 if (event.type !== 'DELETE') return context.todos
-                return context.todos.filter((todo) => todo.id !== event.id)
+                taskService.delete(event.id)
+                return context.todos.filter((todo: Todo) => todo.id !== event.id)
             },
         }),
         deleteAllCompleted: assign({
-            todos: ({ context, event }) => {
+            todos: ({ context, event }: { context: TodoContext; event: any }) => {
                 if (event.type !== 'DELETE_ALL_COMPLETED') return context.todos
-                return context.todos.filter((todo) => !todo.completed)
+                const completedTodos = context.todos.filter((todo: Todo) => todo.completed)
+                completedTodos.forEach((todo: Todo) => taskService.delete(todo.id))
+                return context.todos.filter((todo: Todo) => !todo.completed)
             },
         }),
         moveToDay: assign({
-            todos: ({ context, event }) => {
+            todos: ({ context, event }: { context: TodoContext; event: any }) => {
                 if (event.type !== 'MOVE_TO_DAY') return context.todos
-                return context.todos.map((todo) =>
+                const updatedTodos = context.todos.map((todo: Todo) =>
                     todo.id === event.id ? { ...todo, date: event.date } : todo
                 )
+                taskService.update(event.id, { placementDate: new Date(event.date) })
+                return updatedTodos
             },
         }),
         reorderTodos: assign({
-            todos: ({ context, event }) => {
+            todos: ({ context, event }: { context: TodoContext; event: any }) => {
                 if (event.type !== 'REORDER') return context.todos
                 const newTodos = [...context.todos]
                 const [removed] = newTodos.splice(event.oldIndex, 1)
@@ -60,25 +104,29 @@ export const machine = setup({
                 return newTodos
             },
         }),
-        tasksLoaded: assign({
-            todos: ({ context, event }) => {
-                if (event.type !== 'TASKS_LOADED') return context.todos
-                return event.todos
-            }
-        })
+    },
+    actors: {
+        loadTodosActor: loadTodosLogic,
     },
 }).createMachine({
     id: 'todo',
-    initial: 'active',
+    initial: 'loading',
     context: {
         todos: [],
     },
-    on: {
-        TASKS_LOADED: {
-            actions: 'tasksLoaded'
-        }
-    },
     states: {
+        loading: {
+            invoke: {
+                src: 'loadTodosActor',
+                onDone: {
+                    target: 'active',
+                    actions: [{ type: 'loadTodos', params: ({ event }: { event: any }) => ({ todos: event.output }) }],
+                },
+                onError: {
+                    target: 'active',
+                },
+            },
+        },
         active: {
             on: {
                 ADD: {
