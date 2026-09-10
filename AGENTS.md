@@ -17,11 +17,28 @@ npm run tauri build  # Production Tauri build
 ```
 
 ## Architecture
-- `src/` - React frontend
+```
+src/
+├── main.tsx              # React entry point
+├── App.tsx               # Root app component
+├── mobile/               # Mobile-specific UI
+│   ├── MobileApp.tsx
+│   ├── MobileLayout.tsx
+│   ├── tabs/             # DayTab, WeekTab, ProjectsTab, OverviewTab
+│   └── components/       # Modal, Button
+├── desktop/              # Desktop-specific UI
+│   ├── DesktopApp.tsx
+│   └── components/       # TodoItem
+└── shared/               # Shared code
+    ├── types/            # Todo, Modal, MobileLayout, Button types
+    ├── machines/         # XState todoMachine
+    ├── hooks/            # useStore (persistence)
+    └── components/       # TodoItem
+```
+
 - `src-tauri/` - Rust/Tauri backend (lib name: `todo_app_lib` with `_lib` suffix for Windows compatibility)
-- `src/machines/todoMachine.ts` - XState machine (ADD, TOGGLE, DELETE, REORDER events)
-- `src/hooks/useStore.ts` - Persistence hook wrapping `LazyStore` from `@tauri-apps/plugin-store`
-- `src/components/SortableTodo.tsx` - Draggable todo item
+- `src/shared/machines/todoMachine.ts` - XState machine with events: ADD, TOGGLE, DELETE, DELETE_ALL_COMPLETED, REORDER, MOVE_TO_DAY, TASKS_LOADED
+- `src/shared/hooks/useStore.ts` - Persistence hook wrapping `LazyStore` from `@tauri-apps/plugin-store`
 
 ## Quirks
 - Tailwind CSS 4 uses `@tailwindcss/vite` plugin, not the classic PostCSS setup
