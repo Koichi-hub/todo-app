@@ -2,6 +2,11 @@ import { Modal } from '../components'
 import LinkButton from './LinkButton'
 import type { Todo } from '../../shared/types'
 import { formatDateWithDay, formatDateFull } from '../../shared/misc'
+import { projectService } from '../../shared/services/projectService'
+import { sectionService } from '../../shared/services/sectionService'
+import { taskService } from '../../shared/services/taskService'
+import { useEffect, useState } from 'react'
+import type { Section } from '../../shared/services/schema'
 
 export type TaskEditModalProps = {
     isOpen: boolean
@@ -10,12 +15,79 @@ export type TaskEditModalProps = {
     onToggleComplete: () => void
 }
 
+type SectionWithProject = Section & { projectName?: string }
+
+type RelatedTaskDisplay = {
+    id: string
+    name: string
+    sectionName?: string
+    projectName?: string
+}
+
 export default function TaskEditModal({
     isOpen,
     onClose,
     task,
     onToggleComplete,
 }: TaskEditModalProps) {
+    const [section, setSection] = useState<SectionWithProject | null>(null)
+    const [relatedTasks, setRelatedTasks] = useState<RelatedTaskDisplay[]>([])
+    const [loading, setLoading] = useState(false)
+
+    useEffect(() => {
+        if (!isOpen) return
+        setLoading(true)
+        const loadData = async () => {
+            try {
+                let sectionData: SectionWithProject | null = null
+                const relatedTasksData: RelatedTaskDisplay[] = []
+
+                if (task.sectionId != null) {
+                    const s = await sectionService.getById(task.sectionId)
+                    if (s != null) {
+                        let projectName: string | undefined
+                        if (s.projectId != null) {
+                            const p = await projectService.getById(s.projectId)
+                            if (p != null) {
+                                projectName = p.name
+                            }
+                        }
+                        sectionData = { ...s, projectName }
+                    }
+                }
+
+                const related: any[] = await taskService.getRelatedTasks(task.id)
+                if (Array.isArray(related)) {
+                    for (const rt of related) {
+                        let sectionName: string | undefined
+                        let projectName: string | undefined
+                        if (rt.section_id != null) {
+                            const s = await sectionService.getById(rt.section_id)
+                            if (s != null) {
+                                sectionName = s.name
+                                if (s.projectId != null) {
+                                    const p = await projectService.getById(s.projectId)
+                                    if (p != null) {
+                                        projectName = p.name
+                                    }
+                                }
+                            }
+                        }
+                        relatedTasksData.push({ id: rt.id, name: rt.name, sectionName, projectName })
+                    }
+                }
+
+                setSection(sectionData)
+                setRelatedTasks(relatedTasksData)
+            } catch (e) {
+                console.error('Failed to load task data:', e)
+            } finally {
+                setLoading(false)
+            }
+        }
+        loadData()
+    }, [isOpen, task.id, task.sectionId])
+
     return (
         <Modal isOpen={isOpen} onClose={onClose}>
             <div className="flex flex-col h-full overflow-y-auto gap-2 p-2">
@@ -46,7 +118,15 @@ export default function TaskEditModal({
                         <span className="text-base text-white underline">Раздел</span>
                         <LinkButton>Редактировать</LinkButton>
                     </div>
-                    <span className="text-white/70 text-sm">Без раздела</span>
+                    {loading ? (
+                        <span className="text-white/70 text-sm">Загрузка...</span>
+                    ) : section ? (
+                        <div className="p-2 bg-white/10 border border-white/20 rounded-2xl text-sm">
+                            <span className="text-white">{section.name}{section.projectName ? ` / ${section.projectName}` : ''}</span>
+                        </div>
+                    ) : (
+                        <span className="text-white/70 text-sm">Без раздела</span>
+                    )}
                 </div>
 
                 {/* Блок: связанные задачи */}
@@ -55,7 +135,19 @@ export default function TaskEditModal({
                         <span className="text-base text-white underline">Связанные задачи</span>
                         <LinkButton>Редактировать</LinkButton>
                     </div>
-                    <span className="text-white/70 text-sm">Нет связанных задач</span>
+                    {loading ? (
+                        <span className="text-white/70 text-sm">Загрузка...</span>
+                    ) : relatedTasks.length > 0 ? (
+                        <div className="flex flex-col gap-1">
+                            {relatedTasks.map((rt) => (
+                                <div key={rt.id} className="p-2 bg-white/10 border border-white/20 rounded-2xl text-sm">
+                                    <span className="text-white">{rt.name}{rt.sectionName ? ` / ${rt.sectionName}` : ''}{rt.projectName ? ` / ${rt.projectName}` : ''}</span>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <span className="text-white/70 text-sm">Нет связанных задач</span>
+                    )}
                 </div>
 
                 {/* Блок: дата размещения */}

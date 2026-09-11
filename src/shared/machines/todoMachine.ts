@@ -33,12 +33,13 @@ function todoToTask(todo: Todo): NewTask {
     }
 }
 
-function taskToTodo(task: { id: string; name: string; isCompleted: boolean; placementDate: Date | null }): Todo {
+function taskToTodo(task: { id: string; name: string; isCompleted: boolean; placementDate: Date | null; sectionId?: string | null }): Todo {
     return {
         id: task.id,
         text: task.name,
         completed: task.isCompleted,
         date: task.placementDate ? task.placementDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        sectionId: task.sectionId,
     }
 }
 

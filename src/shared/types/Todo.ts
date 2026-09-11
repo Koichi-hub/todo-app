@@ -3,6 +3,8 @@ export interface Todo {
     text: string
     completed: boolean
     date: string
+    sectionId?: string | null
+    relatedTaskIds?: string[]
 }
 
 export type InitializeEvent = { type: 'INITIALIZE' }
