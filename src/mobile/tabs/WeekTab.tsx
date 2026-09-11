@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { TodoItem } from '../../shared/components'
-import { Modal } from '../components'
+import { Modal, TodoItem } from '../components'
 import { useMachineContext } from '../../shared/machines'
 import { DAY_NAMES, getDateKey, getWeekDates } from '../../shared/misc'
 

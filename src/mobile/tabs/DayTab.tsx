@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { TodoItem } from '../../shared/components'
-import { Modal, AddItemInput } from '../components'
+import { Modal, AddItemInput, TodoItem } from '../components'
 import { useMachineContext } from '../../shared/machines'
 
 export default function DayTab() {
