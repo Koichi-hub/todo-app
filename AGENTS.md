@@ -55,7 +55,7 @@ src/
     ├── hooks/            # useStore (persistence)
     ├── services/         # db, schema, taskService, projectService, tagService, sectionService
     ├── components/       # TodoItem
-    └── misc/             # date, constants
+    └── misc/             # date, constants, mappers (Task<->Todo)
 ```
 
 ## Data Flow (Обязательный паттерн)
@@ -81,7 +81,7 @@ type CombinedContext = {
 ### XState Events (ключевые):
 ```
 Todo events:    ADD, TOGGLE, DELETE, DELETE_ALL_COMPLETED, REORDER, MOVE_TO_DAY, TASKS_LOADED
-Project events: LOAD_PROJECTS, ADD_PROJECT, UPDATE_PROJECT, PROJECT_SECTIONS_LOADED
+Project events: LOAD_PROJECTS, ADD_PROJECT, UPDATE_PROJECT, LOAD_PROJECT_SECTIONS, PROJECT_SECTIONS_LOADED, ADD_SECTION, ADD_TASK_TO_SECTION, TOGGLE_SECTION_TASK
 Tag events:     LOAD_TAGS
 ```
 
@@ -106,6 +106,7 @@ const { projects } = snapshot.context
 
 - `src-tauri/` - Rust/Tauri backend (lib name: `todo_app_lib` with `_lib` suffix for Windows compatibility)
 - `src/shared/machines/todoMachine.ts` - XState machine (все события и действия)
+- `src/shared/misc/mappers.ts` - Функции маппинга 
 - `src/shared/services/db.ts` - Drizzle ORM instance with SQLite
 - `src/shared/services/schema.ts` - Database schema (tasks, projects, tags, sections tables)
 - `src/shared/services/*.ts` - Сервисы (taskService, projectService, sectionService, tagService)

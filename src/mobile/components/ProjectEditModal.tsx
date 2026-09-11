@@ -1,5 +1,5 @@
 import { Modal } from '../components'
-import LinkButton from './LinkButton'
+import { AddItemInput } from '../components'
 import type { Project, Tag } from '../../shared/services/schema'
 import { formatDateFull } from '../../shared/misc'
 import type { SectionWithStats } from '../../shared/machines/todoMachine'
@@ -15,6 +15,10 @@ export type ProjectEditModalProps = {
     sections: SectionWithStats[]
     projectTag: Tag | null
     onProjectUpdate: (project: Project) => void
+    onAddSection: (name: string) => void
+    onAddTaskToSection: (sectionId: string, name: string) => void
+    onToggleTask: (taskId: string, projectId: string) => void
+    onEditTask: (taskId: string) => void
 }
 
 export default function ProjectEditModal({
@@ -24,6 +28,10 @@ export default function ProjectEditModal({
     sections,
     projectTag,
     onProjectUpdate,
+    onAddSection,
+    onAddTaskToSection,
+    onToggleTask,
+    onEditTask,
 }: ProjectEditModalProps) {
     const totalCompleted = sections.reduce((acc, s) => acc + s.completedCount, 0)
     const totalTasks = sections.reduce((acc, s) => acc + s.totalCount, 0)
@@ -57,10 +65,10 @@ export default function ProjectEditModal({
                     </div>
                 </div>
 
+                {/* Блок разделы */}
                 <div className="border-white/10">
-                    <div className="flex items-center gap-2">
-                        <span className="text-base text-white underline">Разделы</span>
-                        <LinkButton>Редактировать</LinkButton>
+                    <div className="mt-2">
+                        <AddItemInput placeholder="Введите название раздела..." onAdd={onAddSection} />
                     </div>
                     {sections.length > 0 ? (
                         <div className="flex flex-col gap-2 mt-2">
@@ -73,6 +81,9 @@ export default function ProjectEditModal({
                                     totalCount={s.totalCount}
                                     recordedTimeInSecs={s.recordedTimeInSecs}
                                     tag={s.tag}
+                                    onAddTask={(name) => onAddTaskToSection(s.section.id, name)}
+                                    onToggleTask={(taskId) => onToggleTask(taskId, project.id)}
+                                    onEditTask={onEditTask}
                                 />
                             ))}
                         </div>
@@ -82,13 +93,11 @@ export default function ProjectEditModal({
                 </div>
 
                 <div className="border-white/10">
-                    <div className="bg-white/10 border border-white/20 rounded-2xl p-3 mt-1">
-                        <StatusTimeBlock
-                            completed={totalCompleted}
-                            total={totalTasks}
-                            recordedTimeInSecs={totalRecordedTime}
-                        />
-                    </div>
+                    <StatusTimeBlock
+                        completed={totalCompleted}
+                        total={totalTasks}
+                        recordedTimeInSecs={totalRecordedTime}
+                    />
                 </div>
 
                 <div className="border-white/10">

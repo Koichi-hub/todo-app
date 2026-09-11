@@ -1,5 +1,5 @@
 // XState 5 machine: управляет состоянием todos и projects.
-// ВАЖНО: Todo (фронтенд) != Task (БД). Маппинг через todoToTask() и taskToTodo().
+// ВАЖНО: Todo (фронтенд) != Task (БД). Маппинг через todoToTask() и taskToTodo() (src/shared/misc/mappers.ts).
 // Операции с БД: taskService, projectService, sectionService (src/shared/services/).
 // НЕ использует invoke() — сервисы работают напрямую с tauri-plugin-sql.
 import { setup, assign, fromPromise } from 'xstate'
@@ -7,8 +7,9 @@ import { taskService } from '../services/taskService'
 import { projectService } from '../services/projectService'
 import { sectionService } from '../services/sectionService'
 import { tagService } from '../services/tagService'
+import { todoToTask, taskToTodo } from '../misc/mappers'
 import type { TodoEvent, TodoContext, Todo } from '../types'
-import type { NewTask, Task } from '../services/schema'
+import type { Task } from '../services/schema'
 import type { Project, Section, Tag } from '../services/schema'
 
 type SectionWithStats = {
@@ -37,35 +38,13 @@ type ProjectEvent =
     | { type: 'UPDATE_PROJECT'; project: Project }
     | { type: 'LOAD_PROJECT_SECTIONS'; projectId: string }
     | { type: 'PROJECT_SECTIONS_LOADED'; projectId: string; sections: SectionWithStats[] }
+    | { type: 'ADD_SECTION'; projectId: string; name: string }
+    | { type: 'ADD_TASK_TO_SECTION'; sectionId: string; projectId: string; name: string }
+    | { type: 'TOGGLE_SECTION_TASK'; taskId: string; projectId: string }
     | { type: 'LOAD_TAGS' }
     | { type: 'TAGS_LOADED'; tags: Tag[] }
 
 export { type ProjectEvent, type SectionWithStats }
-
-// Todo (frontend) -> Task (DB schema). Синхронизировать при изменении структуры!
-function todoToTask(todo: Todo): NewTask {
-    return {
-        id: todo.id,
-        name: todo.text,
-        description: '',
-        isCompleted: todo.completed,
-        creationDate: new Date(),
-        placementDate: new Date(todo.date),
-        recordedTimeInSecs: 0,
-        sectionId: null,
-    }
-}
-
-// Task (DB schema) -> Todo (frontend view model). Синхронизировать при изменении структуры!
-function taskToTodo(task: { id: string; name: string; isCompleted: boolean; placementDate: Date | null; sectionId?: string | null }): Todo {
-    return {
-        id: task.id,
-        text: task.name,
-        completed: task.isCompleted,
-        date: task.placementDate ? task.placementDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-        sectionId: task.sectionId,
-    }
-}
 
 const loadTodosLogic = fromPromise(async () => {
     const tasks = await taskService.getAll()
@@ -235,6 +214,81 @@ export const machine = setup({
                 return newMap
             },
         }),
+        addSection: assign({
+            projectSections: ({ context, event }: { context: CombinedContext; event: any }) => {
+                if (event.type !== 'ADD_SECTION') return context.projectSections
+                const newSection: Section = {
+                    id: crypto.randomUUID(),
+                    name: event.name,
+                    description: '',
+                    creationDate: new Date(),
+                    projectId: event.projectId,
+                    tagId: null,
+                }
+                sectionService.create(newSection)
+                const newMap = new Map(context.projectSections)
+                const existing = newMap.get(event.projectId) || []
+                newMap.set(event.projectId, [
+                    ...existing,
+                    { section: newSection, tasks: [], completedCount: 0, totalCount: 0, recordedTimeInSecs: 0, tag: null }
+                ])
+                return newMap
+            },
+        }),
+        addTaskToSection: assign(({ context, event }: { context: CombinedContext; event: any }) => {
+            if (event.type !== 'ADD_TASK_TO_SECTION') return {}
+            const newTask: Task = {
+                id: crypto.randomUUID(),
+                name: event.name,
+                description: '',
+                isCompleted: false,
+                creationDate: new Date(),
+                placementDate: new Date(),
+                recordedTimeInSecs: 0,
+                sectionId: event.sectionId,
+            }
+            taskService.create(newTask)
+            const newTodo = taskToTodo(newTask)
+            const newMap = new Map(context.projectSections)
+            const sections = newMap.get(event.projectId) || []
+            const updatedSections = sections.map(s => {
+                if (s.section.id !== event.sectionId) return s
+                return {
+                    ...s,
+                    tasks: [...s.tasks, newTask],
+                    totalCount: s.totalCount + 1,
+                }
+            })
+            newMap.set(event.projectId, updatedSections)
+            return {
+                todos: [...context.todos, newTodo],
+                projectSections: newMap,
+            }
+        }),
+        toggleSectionTask: assign({
+            projectSections: ({ context, event }: { context: CombinedContext; event: any }) => {
+                if (event.type !== 'TOGGLE_SECTION_TASK') return context.projectSections
+                const newMap = new Map(context.projectSections)
+                const sections = newMap.get(event.projectId) || []
+                const updatedSections = sections.map(s => {
+                    const taskIndex = s.tasks.findIndex(t => t.id === event.taskId)
+                    if (taskIndex === -1) return s
+                    const task = s.tasks[taskIndex]
+                    const newIsCompleted = !task.isCompleted
+                    taskService.update(event.taskId, { isCompleted: newIsCompleted })
+                    const updatedTasks = s.tasks.map(t =>
+                        t.id === event.taskId ? { ...t, isCompleted: newIsCompleted } : t
+                    )
+                    return {
+                        ...s,
+                        tasks: updatedTasks,
+                        completedCount: newIsCompleted ? s.completedCount + 1 : s.completedCount - 1,
+                    }
+                })
+                newMap.set(event.projectId, updatedSections)
+                return newMap
+            },
+        }),
         loadTags: assign({
             tags: ({ event }: { event: any }) => {
                 if (event.type !== 'TAGS_LOADED') return new Map()
@@ -304,6 +358,15 @@ export const machine = setup({
                 },
                 LOAD_PROJECT_SECTIONS: {
                     target: 'loadingProjectSections',
+                },
+                ADD_SECTION: {
+                    actions: 'addSection',
+                },
+                ADD_TASK_TO_SECTION: {
+                    actions: 'addTaskToSection',
+                },
+                TOGGLE_SECTION_TASK: {
+                    actions: 'toggleSectionTask',
                 },
                 LOAD_TAGS: {
                     target: 'loadingTags',

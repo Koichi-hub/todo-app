@@ -17,12 +17,14 @@ export default function StatusTimeBlock({ completed, total, recordedTimeInSecs }
     const percentage = total > 0 ? Math.round((completed / total) * 100) : 0
 
     return (
-        <div className="flex items-center justify-between w-full">
-            <div className="flex items-center gap-3">
-                <span className="text-white text-20px">{completed} / {total}</span>
-                <span className="text-white text-20px">{percentage}%</span>
+        <div className="bg-white/10 border border-white/20 rounded-2xl p-3">
+            <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-3">
+                    <span className="text-white text-20px">{completed} / {total}</span>
+                    <span className="text-white text-20px">{percentage}%</span>
+                </div>
+                <span className="text-white text-20px">{formatRecordedTime(recordedTimeInSecs)}</span>
             </div>
-            <span className="text-white text-20px">{formatRecordedTime(recordedTimeInSecs)}</span>
         </div>
     )
 }

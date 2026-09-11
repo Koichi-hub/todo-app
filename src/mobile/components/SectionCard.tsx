@@ -1,5 +1,7 @@
 import type { Section, Tag, Task } from '../../shared/services/schema'
-import { formatDateFull } from '../../shared/misc'
+import { formatDateFull, taskToTodo } from '../../shared/misc'
+import { AddItemInput } from '../components'
+import { TodoItem } from './TodoItem'
 import StatusTimeBlock from './StatusTimeBlock'
 import TagBadge from './TagBadge'
 
@@ -10,6 +12,9 @@ type SectionCardProps = {
     totalCount: number
     recordedTimeInSecs: number
     tag: Tag | null
+    onAddTask: (name: string) => void
+    onToggleTask: (taskId: string) => void
+    onEditTask: (taskId: string) => void
 }
 
 export default function SectionCard({
@@ -19,6 +24,9 @@ export default function SectionCard({
     totalCount,
     recordedTimeInSecs,
     tag,
+    onAddTask,
+    onToggleTask,
+    onEditTask,
 }: SectionCardProps) {
     return (
         <div className="p-3 bg-white/10 border border-white/20 rounded-2xl flex flex-col gap-2">
@@ -29,14 +37,21 @@ export default function SectionCard({
                 </span>
             </div>
 
-            <div className="border-t border-white/10 pt-2">
-                <span className="text-white/50 text-xs underline">Задачи</span>
+            <div className="border-white/10">
+                <AddItemInput placeholder="Введите название задачи..." onAdd={onAddTask} />
+            </div>
+
+            <div className="border-white/10">
                 {tasks.length > 0 ? (
-                    <div className="flex flex-col gap-1 mt-1">
+                    <div className="flex flex-col gap-1">
                         {tasks.map(task => (
-                            <div key={task.id} className="p-2 bg-white/5 border border-white/10 rounded-xl text-sm">
-                                <span className="text-white">{task.name}</span>
-                            </div>
+                            <TodoItem
+                                key={task.id}
+                                todo={taskToTodo(task)}
+                                onToggle={() => onToggleTask(task.id)}
+                                onAction={() => onEditTask(task.id)}
+                                actionType="edit"
+                            />
                         ))}
                     </div>
                 ) : (
@@ -44,7 +59,7 @@ export default function SectionCard({
                 )}
             </div>
 
-            <div className="border-t border-white/10 pt-2">
+            <div className="border-white/10">
                 <StatusTimeBlock
                     completed={completedCount}
                     total={totalCount}
@@ -52,7 +67,7 @@ export default function SectionCard({
                 />
             </div>
 
-            <TagBadge tag={tag} variant="section" />
+            <TagBadge tag={tag} />
 
             <div className="mt-auto pt-2 flex justify-end">
                 <span className="text-white/50 text-xs">

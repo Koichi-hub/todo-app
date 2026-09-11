@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react'
-import { AddItemInput, ProjectCard, ProjectEditModal } from '../components'
+import { AddItemInput, ProjectCard, ProjectEditModal, TaskEditModal } from '../components'
 import { useMachineContext } from '../../shared/machines'
 import type { Project } from '../../shared/services/schema'
 import type { SectionWithStats } from '../../shared/machines/todoMachine'
+import type { Todo } from '../../shared/types'
 
 export default function ProjectsTab() {
     const { snapshot, send } = useMachineContext()
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [selectedProject, setSelectedProject] = useState<Project | null>(null)
     const [selectedProjectSections, setSelectedProjectSections] = useState<SectionWithStats[]>([])
+    const [isTaskModalOpen, setIsTaskModalOpen] = useState(false)
+    const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
 
     useEffect(() => {
         send({ type: 'LOAD_PROJECTS' })
@@ -51,6 +54,36 @@ export default function ProjectsTab() {
         setSelectedProject(updatedProject)
     }
 
+    const handleAddSection = (name: string) => {
+        if (selectedProject) {
+            send({ type: 'ADD_SECTION', projectId: selectedProject.id, name })
+        }
+    }
+
+    const handleAddTaskToSection = (sectionId: string, name: string) => {
+        if (selectedProject) {
+            send({ type: 'ADD_TASK_TO_SECTION', sectionId, projectId: selectedProject.id, name })
+        }
+    }
+
+    const handleToggleTask = (taskId: string, projectId: string) => {
+        send({ type: 'TOGGLE_SECTION_TASK', taskId, projectId })
+    }
+
+    const handleEditTask = (taskId: string) => {
+        setSelectedTaskId(taskId)
+        setIsTaskModalOpen(true)
+    }
+
+    const handleCloseTask = () => {
+        setIsTaskModalOpen(false)
+        setSelectedTaskId(null)
+    }
+
+    const selectedTask = selectedTaskId
+        ? snapshot.context.todos.find((t: Todo) => t.id === selectedTaskId) || null
+        : null
+
     const projectTag = selectedProject?.tagId
         ? snapshot.context.tags.get(selectedProject.tagId) || null
         : null
@@ -87,6 +120,20 @@ export default function ProjectsTab() {
                     sections={selectedProjectSections}
                     projectTag={projectTag}
                     onProjectUpdate={handleProjectUpdate}
+                    onAddSection={handleAddSection}
+                    onAddTaskToSection={handleAddTaskToSection}
+                    onToggleTask={handleToggleTask}
+                    onEditTask={handleEditTask}
+                />
+            )}
+
+            {selectedTask && (
+                <TaskEditModal
+                    isOpen={isTaskModalOpen}
+                    onClose={handleCloseTask}
+                    task={selectedTask}
+                    onToggleComplete={() => selectedTask && send({ type: 'TOGGLE', id: selectedTask.id })}
+                    onUpdate={(id, text, description) => send({ type: 'UPDATE_TODO', id, text, description })}
                 />
             )}
 
