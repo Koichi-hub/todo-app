@@ -1,9 +1,12 @@
-import { useEffect } from 'react'
-import { AddItemInput, ProjectCard } from '../components'
+import { useEffect, useState } from 'react'
+import { AddItemInput, ProjectCard, ProjectEditModal } from '../components'
 import { useMachineContext } from '../../shared/machines'
+import type { Project } from '../../shared/services/schema'
 
 export default function ProjectsTab() {
     const { snapshot, send } = useMachineContext()
+    const [isModalOpen, setIsModalOpen] = useState(false)
+    const [selectedProject, setSelectedProject] = useState<Project | null>(null)
 
     useEffect(() => {
         send({ type: 'LOAD_PROJECTS' })
@@ -11,6 +14,16 @@ export default function ProjectsTab() {
 
     const handleAdd = (value: string) => {
         send({ type: 'ADD_PROJECT', name: value })
+    }
+
+    const handleEdit = (project: Project) => {
+        setSelectedProject(project)
+        setIsModalOpen(true)
+    }
+
+    const handleClose = () => {
+        setIsModalOpen(false)
+        setSelectedProject(null)
     }
 
     return (
@@ -30,11 +43,20 @@ export default function ProjectsTab() {
                                 name={project.name}
                                 description={project.description}
                                 createdAt={project.creationDate}
+                                onEdit={() => handleEdit(project)}
                             />
                         ))
                     )}
                 </div>
             </div>
+
+            {selectedProject && (
+                <ProjectEditModal
+                    isOpen={isModalOpen}
+                    onClose={handleClose}
+                    project={selectedProject}
+                />
+            )}
 
             <style>{`
                 .custom-scrollbar::-webkit-scrollbar {
