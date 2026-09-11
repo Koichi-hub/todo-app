@@ -43,7 +43,7 @@ src/
 │   ├── MobileApp.tsx
 │   ├── MobileLayout.tsx
 │   ├── tabs/             # DayTab, WeekTab, ProjectsTab, OverviewTab
-│   ├── components/       # Modal, Button
+│   ├── components/       # Modal, Button, EditableText, SectionCard, etc.
 │   ├── types/            # Modal, MobileLayout, Button types
 │   └── misc/             # tabs.tsx
 ├── desktop/              # Desktop-specific UI
@@ -58,11 +58,59 @@ src/
     └── misc/             # date, constants
 ```
 
+## Data Flow (Обязательный паттерн)
+
+> [!IMPORTANT]
+> **Service → XState → Component** — Единственный корректный поток данных.
+
+### Правила:
+1. **Components** — только UI и диспетчеризация событий в XState. НЕ вызывают сервисы напрямую.
+2. **XState** — единственный источник состояния. Хранит данные в `context`. Вызывает сервисы через `actors` и `actions`.
+3. **Services** — только доступ к данным (CRUD). Не содержат бизнес-логику.
+
+### XState Context (текущий):
+```typescript
+type CombinedContext = {
+    todos: Todo[]           // Задачи
+    projects: Project[]     // Проекты
+    projectSections: Map<string, SectionWithStats[]>  // Секции проекта с статистикой
+    tags: Map<string, Tag>  // Теги
+}
+```
+
+### XState Events (ключевые):
+```
+Todo events:    ADD, TOGGLE, DELETE, DELETE_ALL_COMPLETED, REORDER, MOVE_TO_DAY, TASKS_LOADED
+Project events: LOAD_PROJECTS, ADD_PROJECT, UPDATE_PROJECT, PROJECT_SECTIONS_LOADED
+Tag events:     LOAD_TAGS
+```
+
+### Пример корректного обновления данных:
+```typescript
+// Component диспетчеризует событие
+send({ type: 'UPDATE_PROJECT', project: updatedProject })
+
+// XState action вызывает сервис и обновляет context
+updateProject: assign({
+    projects: ({ context, event }) => {
+        projectService.update(event.project.id, event.project)  // Service
+        return context.projects.map(p => p.id === event.project.id ? event.project : p)  // State
+    }
+})
+
+// Component получает обновленные данные из snapshot.context
+const { projects } = snapshot.context
+```
+
+## Key Files
+
 - `src-tauri/` - Rust/Tauri backend (lib name: `todo_app_lib` with `_lib` suffix for Windows compatibility)
-- `src/shared/machines/todoMachine.ts` - XState machine with events: ADD, TOGGLE, DELETE, DELETE_ALL_COMPLETED, REORDER, MOVE_TO_DAY, TASKS_LOADED
+- `src/shared/machines/todoMachine.ts` - XState machine (все события и действия)
 - `src/shared/services/db.ts` - Drizzle ORM instance with SQLite
 - `src/shared/services/schema.ts` - Database schema (tasks, projects, tags, sections tables)
+- `src/shared/services/*.ts` - Сервисы (taskService, projectService, sectionService, tagService)
 - `src/shared/hooks/useStore.ts` - Persistence hook using `LazyStore` from `@tauri-apps/plugin-store`
+- `src/shared/machines/useMachineContext.ts` - XState hook для доступа к state и send
 
 ## Quirks
 - Tailwind CSS 4 uses `@tailwindcss/vite` plugin, not the classic PostCSS setup

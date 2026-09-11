@@ -2,15 +2,33 @@ import { useEffect, useState } from 'react'
 import { AddItemInput, ProjectCard, ProjectEditModal } from '../components'
 import { useMachineContext } from '../../shared/machines'
 import type { Project } from '../../shared/services/schema'
+import type { SectionWithStats } from '../../shared/machines/todoMachine'
 
 export default function ProjectsTab() {
     const { snapshot, send } = useMachineContext()
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [selectedProject, setSelectedProject] = useState<Project | null>(null)
+    const [selectedProjectSections, setSelectedProjectSections] = useState<SectionWithStats[]>([])
 
     useEffect(() => {
         send({ type: 'LOAD_PROJECTS' })
+        send({ type: 'LOAD_TAGS' })
     }, [send])
+
+    useEffect(() => {
+        if (selectedProject && isModalOpen) {
+            send({ type: 'LOAD_PROJECT_SECTIONS', projectId: selectedProject.id })
+        }
+    }, [selectedProject?.id, isModalOpen, send])
+
+    useEffect(() => {
+        if (selectedProject) {
+            const sections = snapshot.context.projectSections.get(selectedProject.id)
+            if (sections) {
+                setSelectedProjectSections(sections)
+            }
+        }
+    }, [snapshot.context.projectSections, selectedProject?.id])
 
     const handleAdd = (value: string) => {
         send({ type: 'ADD_PROJECT', name: value })
@@ -18,13 +36,24 @@ export default function ProjectsTab() {
 
     const handleEdit = (project: Project) => {
         setSelectedProject(project)
+        setSelectedProjectSections([])
         setIsModalOpen(true)
     }
 
     const handleClose = () => {
         setIsModalOpen(false)
         setSelectedProject(null)
+        setSelectedProjectSections([])
     }
+
+    const handleProjectUpdate = (updatedProject: Project) => {
+        send({ type: 'UPDATE_PROJECT', project: updatedProject })
+        setSelectedProject(updatedProject)
+    }
+
+    const projectTag = selectedProject?.tagId
+        ? snapshot.context.tags.get(selectedProject.tagId) || null
+        : null
 
     return (
         <div className="flex flex-col items-center gap-2 h-full">
@@ -55,6 +84,9 @@ export default function ProjectsTab() {
                     isOpen={isModalOpen}
                     onClose={handleClose}
                     project={selectedProject}
+                    sections={selectedProjectSections}
+                    projectTag={projectTag}
+                    onProjectUpdate={handleProjectUpdate}
                 />
             )}
 

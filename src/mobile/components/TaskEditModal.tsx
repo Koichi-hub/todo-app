@@ -2,17 +2,16 @@ import { Modal } from '../components'
 import LinkButton from './LinkButton'
 import type { Todo } from '../../shared/types'
 import { formatDateWithDay, formatDateFull } from '../../shared/misc'
-import { projectService } from '../../shared/services/projectService'
-import { sectionService } from '../../shared/services/sectionService'
-import { taskService } from '../../shared/services/taskService'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import type { Section } from '../../shared/services/schema'
+import { EditableText } from './EditableText'
 
 export type TaskEditModalProps = {
     isOpen: boolean
     onClose: () => void
     task: Todo
     onToggleComplete: () => void
+    onUpdate: (id: string, text: string, description?: string) => void
 }
 
 type SectionWithProject = Section & { projectName?: string }
@@ -29,64 +28,20 @@ export default function TaskEditModal({
     onClose,
     task,
     onToggleComplete,
+    onUpdate,
 }: TaskEditModalProps) {
-    const [section, setSection] = useState<SectionWithProject | null>(null)
-    const [relatedTasks, setRelatedTasks] = useState<RelatedTaskDisplay[]>([])
-    const [loading, setLoading] = useState(false)
+    const [section] = useState<SectionWithProject | null>(null)
+    const [relatedTasks] = useState<RelatedTaskDisplay[]>([])
+    const [loading] = useState(false)
 
-    useEffect(() => {
-        if (!isOpen) return
-        setLoading(true)
-        const loadData = async () => {
-            try {
-                let sectionData: SectionWithProject | null = null
-                const relatedTasksData: RelatedTaskDisplay[] = []
+    const handleNameSave = (text: string) => {
+        if (!text.trim()) return
+        onUpdate(task.id, text, task.description)
+    }
 
-                if (task.sectionId != null) {
-                    const s = await sectionService.getById(task.sectionId)
-                    if (s != null) {
-                        let projectName: string | undefined
-                        if (s.projectId != null) {
-                            const p = await projectService.getById(s.projectId)
-                            if (p != null) {
-                                projectName = p.name
-                            }
-                        }
-                        sectionData = { ...s, projectName }
-                    }
-                }
-
-                const related: any[] = await taskService.getRelatedTasks(task.id)
-                if (Array.isArray(related)) {
-                    for (const rt of related) {
-                        let sectionName: string | undefined
-                        let projectName: string | undefined
-                        if (rt.section_id != null) {
-                            const s = await sectionService.getById(rt.section_id)
-                            if (s != null) {
-                                sectionName = s.name
-                                if (s.projectId != null) {
-                                    const p = await projectService.getById(s.projectId)
-                                    if (p != null) {
-                                        projectName = p.name
-                                    }
-                                }
-                            }
-                        }
-                        relatedTasksData.push({ id: rt.id, name: rt.name, sectionName, projectName })
-                    }
-                }
-
-                setSection(sectionData)
-                setRelatedTasks(relatedTasksData)
-            } catch (e) {
-                console.error('Failed to load task data:', e)
-            } finally {
-                setLoading(false)
-            }
-        }
-        loadData()
-    }, [isOpen, task.id, task.sectionId])
+    const handleDescriptionSave = (description: string) => {
+        onUpdate(task.id, task.text, description)
+    }
 
     return (
         <Modal isOpen={isOpen} onClose={onClose}>
@@ -94,8 +49,17 @@ export default function TaskEditModal({
                 {/* Блок: название, описание, статус */}
                 <div className="flex items-start gap-4">
                     <div className="flex-1 flex flex-col gap-2">
-                        <span className="text-white text-lg">{task.text}</span>
-                        <span className="text-white/70 text-sm">Нет описания</span>
+                        <EditableText
+                            value={task.text}
+                            onSave={handleNameSave}
+                            textClassName="text-white text-lg"
+                        />
+                        <EditableText
+                            value={task.description || ''}
+                            onSave={handleDescriptionSave}
+                            textClassName="text-white/70 text-sm"
+                            placeholder="Нет описания"
+                        />
                     </div>
                     <div
                         onClick={onToggleComplete}

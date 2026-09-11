@@ -1,16 +1,29 @@
 // XState 5 machine: управляет состоянием todos и projects.
 // ВАЖНО: Todo (фронтенд) != Task (БД). Маппинг через todoToTask() и taskToTodo().
-// Операции с БД: taskService, projectService (src/shared/services/).
+// Операции с БД: taskService, projectService, sectionService (src/shared/services/).
 // НЕ использует invoke() — сервисы работают напрямую с tauri-plugin-sql.
 import { setup, assign, fromPromise } from 'xstate'
 import { taskService } from '../services/taskService'
 import { projectService } from '../services/projectService'
+import { sectionService } from '../services/sectionService'
+import { tagService } from '../services/tagService'
 import type { TodoEvent, TodoContext, Todo } from '../types'
-import type { NewTask } from '../services/schema'
-import type { Project } from '../services/schema'
+import type { NewTask, Task } from '../services/schema'
+import type { Project, Section, Tag } from '../services/schema'
+
+type SectionWithStats = {
+    section: Section
+    tasks: Task[]
+    completedCount: number
+    totalCount: number
+    recordedTimeInSecs: number
+    tag: Tag | null
+}
 
 type ProjectContext = {
     projects: Project[]
+    projectSections: Map<string, SectionWithStats[]>
+    tags: Map<string, Tag>
 }
 
 type CombinedContext = TodoContext & ProjectContext
@@ -21,8 +34,13 @@ type ProjectEvent =
     | { type: 'LOAD_PROJECTS' }
     | { type: 'ADD_PROJECT'; name: string }
     | { type: 'PROJECTS_LOADED'; projects: Project[] }
+    | { type: 'UPDATE_PROJECT'; project: Project }
+    | { type: 'LOAD_PROJECT_SECTIONS'; projectId: string }
+    | { type: 'PROJECT_SECTIONS_LOADED'; projectId: string; sections: SectionWithStats[] }
+    | { type: 'LOAD_TAGS' }
+    | { type: 'TAGS_LOADED'; tags: Tag[] }
 
-export { type ProjectEvent }
+export { type ProjectEvent, type SectionWithStats }
 
 // Todo (frontend) -> Task (DB schema). Синхронизировать при изменении структуры!
 function todoToTask(todo: Todo): NewTask {
@@ -57,6 +75,32 @@ const loadTodosLogic = fromPromise(async () => {
 const loadProjectsLogic = fromPromise(async () => {
     const projects = await projectService.getAll()
     return projects
+})
+
+const loadProjectSectionsLogic = fromPromise(async ({ input }: { input: { projectId: string } }) => {
+    const sections = await sectionService.getByProjectId(input.projectId)
+    const sectionsWithStats = await Promise.all(
+        sections.map(async (s) => {
+            const tasks = await taskService.getBySectionId(s.id)
+            const completedCount = tasks.filter(t => t.isCompleted).length
+            const recordedTimeInSecs = tasks.reduce((acc, t) => acc + (t.recordedTimeInSecs || 0), 0)
+            const tag = s.tagId ? await tagService.getById(s.tagId) : null
+            return {
+                section: s,
+                tasks,
+                completedCount,
+                totalCount: tasks.length,
+                recordedTimeInSecs,
+                tag,
+            }
+        })
+    )
+    return { projectId: input.projectId, sections: sectionsWithStats }
+})
+
+const loadTagsLogic = fromPromise(async () => {
+    const tags = await tagService.getAll()
+    return tags
 })
 
 export const machine = setup({
@@ -122,6 +166,28 @@ export const machine = setup({
                 return updatedTodos
             },
         }),
+        updateTodo: assign({
+            todos: ({ context, event }: { context: CombinedContext; event: any }) => {
+                if (event.type !== 'UPDATE_TODO') return context.todos
+                const updatedTodos = context.todos.map((todo: Todo) => {
+                    if (todo.id !== event.id) return todo
+                    const updates: Partial<Todo> = { id: todo.id }
+                    if (event.text !== undefined) updates.text = event.text
+                    if (event.description !== undefined) updates.description = event.description
+                    return { ...todo, ...updates }
+                })
+                const todo = context.todos.find((t: Todo) => t.id === event.id)
+                if (todo) {
+                    const taskUpdates: any = {}
+                    if (event.text !== undefined) taskUpdates.name = event.text
+                    if (event.description !== undefined) taskUpdates.description = event.description
+                    if (Object.keys(taskUpdates).length > 0) {
+                        taskService.update(event.id, taskUpdates)
+                    }
+                }
+                return updatedTodos
+            },
+        }),
         reorderTodos: assign({
             todos: ({ context, event }: { context: CombinedContext; event: any }) => {
                 if (event.type !== 'REORDER') return context.todos
@@ -152,10 +218,35 @@ export const machine = setup({
                 return [...context.projects, newProject]
             },
         }),
+        updateProject: assign({
+            projects: ({ context, event }: { context: CombinedContext; event: any }) => {
+                if (event.type !== 'UPDATE_PROJECT') return context.projects
+                projectService.update(event.project.id, event.project)
+                return context.projects.map((p: Project) =>
+                    p.id === event.project.id ? event.project : p
+                )
+            },
+        }),
+        loadProjectSections: assign({
+            projectSections: ({ context, event }: { context: CombinedContext; event: any }) => {
+                if (event.type !== 'PROJECT_SECTIONS_LOADED') return context.projectSections
+                const newMap = new Map(context.projectSections)
+                newMap.set(event.projectId, event.sections)
+                return newMap
+            },
+        }),
+        loadTags: assign({
+            tags: ({ event }: { event: any }) => {
+                if (event.type !== 'TAGS_LOADED') return new Map()
+                return new Map(event.tags.map((t: Tag) => [t.id, t]))
+            },
+        }),
     },
     actors: {
         loadTodosActor: loadTodosLogic,
         loadProjectsActor: loadProjectsLogic,
+        loadProjectSectionsActor: loadProjectSectionsLogic,
+        loadTagsActor: loadTagsLogic,
     },
 }).createMachine({
     id: 'todo',
@@ -163,6 +254,8 @@ export const machine = setup({
     context: {
         todos: [],
         projects: [],
+        projectSections: new Map(),
+        tags: new Map(),
     },
     states: {
         loading: {
@@ -197,11 +290,23 @@ export const machine = setup({
                 MOVE_TO_DAY: {
                     actions: 'moveToDay',
                 },
+                UPDATE_TODO: {
+                    actions: 'updateTodo',
+                },
                 LOAD_PROJECTS: {
                     target: 'loadingProjects',
                 },
                 ADD_PROJECT: {
                     actions: 'addProject',
+                },
+                UPDATE_PROJECT: {
+                    actions: 'updateProject',
+                },
+                LOAD_PROJECT_SECTIONS: {
+                    target: 'loadingProjectSections',
+                },
+                LOAD_TAGS: {
+                    target: 'loadingTags',
                 },
             },
         },
@@ -211,6 +316,31 @@ export const machine = setup({
                 onDone: {
                     target: 'active',
                     actions: [{ type: 'loadProjects', params: ({ event }: { event: any }) => ({ projects: event.output }) }],
+                },
+                onError: {
+                    target: 'active',
+                },
+            },
+        },
+        loadingProjectSections: {
+            invoke: {
+                src: 'loadProjectSectionsActor',
+                input: ({ event }: { event: any }) => ({ projectId: event.projectId }),
+                onDone: {
+                    target: 'active',
+                    actions: [{ type: 'loadProjectSections', params: ({ event }: { event: any }) => ({ projectId: event.output.projectId, sections: event.output.sections }) }],
+                },
+                onError: {
+                    target: 'active',
+                },
+            },
+        },
+        loadingTags: {
+            invoke: {
+                src: 'loadTagsActor',
+                onDone: {
+                    target: 'active',
+                    actions: [{ type: 'loadTags', params: ({ event }: { event: any }) => ({ tags: event.output }) }],
                 },
                 onError: {
                     target: 'active',

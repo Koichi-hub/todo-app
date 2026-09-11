@@ -97,6 +97,7 @@ export default function WeekTab() {
                     onClose={handleClose}
                     task={selectedTask}
                     onToggleComplete={() => send({ type: 'TOGGLE', id: selectedTask.id })}
+                    onUpdate={(id, text, description) => send({ type: 'UPDATE_TODO', id, text, description })}
                 />
             )}
 

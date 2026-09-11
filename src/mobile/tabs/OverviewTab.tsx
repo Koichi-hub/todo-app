@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Modal, AddItemInput, FilterBlock } from '../components'
+import TagBadge from '../components/TagBadge'
 
 export default function OverviewTab() {
     const [isModalOpen, setIsModalOpen] = useState(false)
@@ -21,9 +22,7 @@ export default function OverviewTab() {
 
             <AddItemInput placeholder="Введите название тега..." onAdd={() => {}} />
 
-            <div className="bg-white/10 border border-white/20 rounded-2xl p-2 w-full">
-                <div className="text-white/50 text-sm italic">Нет тегов</div>
-            </div>
+            <TagBadge tag={null} />
 
             <FilterBlock filters={filters} onFilterClick={handleFilterClick} />
 

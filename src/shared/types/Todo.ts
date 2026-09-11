@@ -3,6 +3,7 @@
 export interface Todo {
     id: string
     text: string
+    description?: string
     completed: boolean
     date: string
     sectionId?: string | null
@@ -18,6 +19,7 @@ export type SetInputEvent = { type: 'SET_INPUT'; text: string }
 export type ReorderEvent = { type: 'REORDER'; oldIndex: number; newIndex: number; date?: string }
 export type TasksLoadedEvent = { type: 'TASKS_LOADED', todos: Todo[] }
 export type MoveToDayEvent = { type: 'MOVE_TO_DAY'; id: string; date: string }
+export type UpdateTodoEvent = { type: 'UPDATE_TODO'; id: string; text?: string; description?: string }
 
 export type TodoEvent =
     | InitializeEvent
@@ -29,6 +31,7 @@ export type TodoEvent =
     | ReorderEvent
     | TasksLoadedEvent
     | MoveToDayEvent
+    | UpdateTodoEvent
 
 export type TodoContext = {
     todos: Todo[]
