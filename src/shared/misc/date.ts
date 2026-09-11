@@ -6,6 +6,19 @@ export function formatDate(date: Date): string {
     return `${day}.${month}`
 }
 
+export function formatDateWithDay(date: Date): string {
+    const jsDayIndex = date.getDay()
+    const dayIndex = jsDayIndex === 0 ? 6 : jsDayIndex - 1
+    const dayShort = DAY_NAMES[dayIndex]
+    const dayPadded = String(date.getDate()).padStart(2, '0')
+    const monthPadded = String(date.getMonth() + 1).padStart(2, '0')
+    return `${dayShort} ${dayPadded}.${monthPadded}.${date.getFullYear()}`
+}
+
+export function formatDateFull(date: Date): string {
+    return date.toLocaleDateString('ru-RU')
+}
+
 export function getWeekDates(date: Date): Date[] {
     const start = new Date(date)
     const day = start.getDay()

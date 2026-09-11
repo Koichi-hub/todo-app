@@ -1,16 +1,31 @@
 import { useState } from 'react'
-import { Modal, AddItemInput, TodoItem } from '../components'
+import { AddItemInput, TodoItem, TaskEditModal } from '../components'
 import { useMachineContext } from '../../shared/machines'
 
 export default function DayTab() {
     const { snapshot, send } = useMachineContext()
     const [isModalOpen, setIsModalOpen] = useState(false)
+    const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
 
     const today = new Date().toISOString().split('T')[0]
 
     const handleAdd = (text: string) => {
         send({ type: 'ADD', text, date: today })
     }
+
+    const handleEdit = (id: string) => {
+        setSelectedTaskId(id)
+        setIsModalOpen(true)
+    }
+
+    const handleClose = () => {
+        setIsModalOpen(false)
+        setSelectedTaskId(null)
+    }
+
+    const selectedTask = selectedTaskId
+        ? snapshot.context.todos.find((t) => t.id === selectedTaskId)
+        : null
 
     const incomplete = snapshot.context.todos.filter((t) => !t.completed)
     const complete = snapshot.context.todos.filter((t) => t.completed)
@@ -34,7 +49,7 @@ export default function DayTab() {
                                         key={todo.id}
                                         todo={todo}
                                         onToggle={() => send({ type: 'TOGGLE', id: todo.id })}
-                                        onAction={() => setIsModalOpen(true)}
+                                        onAction={() => handleEdit(todo.id)}
                                         actionType="edit"
                                     />
                                 ))
@@ -55,7 +70,7 @@ export default function DayTab() {
                                         key={todo.id}
                                         todo={todo}
                                         onToggle={() => send({ type: 'TOGGLE', id: todo.id })}
-                                        onAction={() => setIsModalOpen(true)}
+                                        onAction={() => handleEdit(todo.id)}
                                         actionType="edit"
                                     />
                                 ))
@@ -64,9 +79,15 @@ export default function DayTab() {
                     </div>
                 </div>
             </div>
-            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-                <h2 className="text-white text-lg font-bold mb-4">Редактирование</h2>
-            </Modal>
+
+            {selectedTask && (
+                <TaskEditModal
+                    isOpen={isModalOpen}
+                    onClose={handleClose}
+                    task={selectedTask}
+                    onToggleComplete={() => send({ type: 'TOGGLE', id: selectedTask.id })}
+                />
+            )}
 
             <style>{`
                 .custom-scrollbar::-webkit-scrollbar {

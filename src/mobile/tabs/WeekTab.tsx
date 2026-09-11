@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { Modal, TodoItem } from '../components'
+import { TodoItem, TaskEditModal } from '../components'
 import { useMachineContext } from '../../shared/machines'
 import { DAY_NAMES, getDateKey, getWeekDates } from '../../shared/misc'
 
 export default function WeekTab() {
     const { snapshot, send } = useMachineContext()
     const [isModalOpen, setIsModalOpen] = useState(false)
+    const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
 
     const now = new Date()
     const weekDates = getWeekDates(now)
@@ -17,6 +18,20 @@ export default function WeekTab() {
         const month = String(date.getMonth() + 1).padStart(2, '0')
         return `${day}.${month}`
     }
+
+    const handleEdit = (id: string) => {
+        setSelectedTaskId(id)
+        setIsModalOpen(true)
+    }
+
+    const handleClose = () => {
+        setIsModalOpen(false)
+        setSelectedTaskId(null)
+    }
+
+    const selectedTask = selectedTaskId
+        ? snapshot.context.todos.find((t) => t.id === selectedTaskId)
+        : null
 
     const todosByDate = weekDates.map(date => {
         const dateKey = getDateKey(date)
@@ -64,7 +79,7 @@ export default function WeekTab() {
                                                 key={todo.id}
                                                 todo={todo}
                                                 onToggle={() => send({ type: 'TOGGLE', id: todo.id })}
-                                                onAction={() => setIsModalOpen(true)}
+                                                onAction={() => handleEdit(todo.id)}
                                                 actionType="edit"
                                             />
                                         ))
@@ -76,9 +91,14 @@ export default function WeekTab() {
                 </div>
             </div>
 
-            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-                <h2 className="text-white text-lg font-bold mb-4">Редактирование</h2>
-            </Modal>
+            {selectedTask && (
+                <TaskEditModal
+                    isOpen={isModalOpen}
+                    onClose={handleClose}
+                    task={selectedTask}
+                    onToggleComplete={() => send({ type: 'TOGGLE', id: selectedTask.id })}
+                />
+            )}
 
             <style>{`
                 .custom-scrollbar::-webkit-scrollbar {
