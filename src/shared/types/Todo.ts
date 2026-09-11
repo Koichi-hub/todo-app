@@ -1,3 +1,5 @@
+// Фронтенд-модель задачи (view model). Маппится в Task (БД) через todoMachine.ts:todoToTask()/taskToTodo().
+// ВАЖНО: При изменении структуры Todo синхронизировать с Task в schema.ts и наоборот!
 export interface Todo {
     id: string
     text: string

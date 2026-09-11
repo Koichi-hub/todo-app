@@ -1,3 +1,6 @@
+// Мост к tauri-plugin-sql: прямой доступ к SQLite из JS (без invoke).
+// Инициализируется один раз, затем используется сервисами (taskService, projectService и др.).
+// Таблицы создаются через Drizzle migrations (src/shared/services/schema.ts).
 import Database from '@tauri-apps/plugin-sql';
 import * as schema from './schema';
 
@@ -29,4 +32,8 @@ export async function getDb() {
     return dbInstance;
 }
 
+// Экспорт типов Drizzle ORM для использования в сервисах (taskService, projectService и др.).
+// ВАЖНО: Типы Task, Project, Tag, Section — это projections таблиц БД.
+// Они ДУБЛИРУЮТСЯ во фронтенде как интерфейсы в Todo.ts.
+// При изменении структуры Task в БД необходимо синхронизировать с Todo.ts!
 export { schema };

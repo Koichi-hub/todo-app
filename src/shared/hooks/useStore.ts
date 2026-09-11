@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react'
 import { LazyStore } from '@tauri-apps/plugin-store'
 
+// tauri-plugin-store (JSON): альтернативная персистенция (не используется для основных данных).
+// Используется для настроек/конфига. Основные данные хранятся в SQLite через tauri-plugin-sql.
 const store = new LazyStore('todos.json')
 
 export function useStore<T>(key: string, onLoad: (value: T) => void): [(value: T) => Promise<void>] {
@@ -14,6 +16,8 @@ export function useStore<T>(key: string, onLoad: (value: T) => void): [(value: T
         }
     }, [])
 
+    // Загрузка данных из LazyStore (tauri-plugin-store).
+    // Флаг isLoadedRef предотвращает сохранение до первого чтения.
     useEffect(() => {
         const load = async () => {
             try {

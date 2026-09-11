@@ -1,4 +1,9 @@
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
+// АРХИТЕКТУРА: Frontend НЕ использует invoke() для CRUD-операций.
+// Все операции с БД выполняются напрямую через tauri-plugin-sql из JavaScript.
+// Сервисы (taskService, projectService и др.) вызывают getDb() из src/shared/services/db.ts
+// Этот файл — резерв для Future-п фич, требующих бизнес-логику на Rust.
+
+// Вызывает: src/shared/services/db.ts (НЕ ИСПОЛЬЗУЕТСЯ, демо-команда)
 #[tauri::command]
 fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)

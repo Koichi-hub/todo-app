@@ -1,3 +1,7 @@
+// Drizzle ORM схема для SQLite (через tauri-plugin-sql).
+// ВАЖНО: Структуры Task, Project, Tag, Section дублируются во фронтенде как интерфейсы Todo (src/shared/types/Todo.ts).
+// При изменении колонок Task важно синхронизировать с фронтенд-моделью Todo.
+// Типы $inferSelect/$inferInsert генерируются автоматически Drizzle.
 import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core';
 
 function guid(): string {
@@ -26,6 +30,8 @@ export const sections = sqliteTable('sections', {
     tagId: text('tag_id').references(() => tags.id),
 });
 
+// Task (БД) -> Todo (фронтенд): маппинг в todoMachine.ts:taskToTodo()
+// Синхронизировать при изменении структуры!
 export const tasks = sqliteTable('tasks', {
     id: text('id').$defaultFn(guid).primaryKey(),
     name: text('name').notNull(),

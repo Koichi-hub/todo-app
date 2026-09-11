@@ -1,3 +1,7 @@
+// XState 5 machine: управляет состоянием todos и projects.
+// ВАЖНО: Todo (фронтенд) != Task (БД). Маппинг через todoToTask() и taskToTodo().
+// Операции с БД: taskService, projectService (src/shared/services/).
+// НЕ использует invoke() — сервисы работают напрямую с tauri-plugin-sql.
 import { setup, assign, fromPromise } from 'xstate'
 import { taskService } from '../services/taskService'
 import { projectService } from '../services/projectService'
@@ -20,6 +24,7 @@ type ProjectEvent =
 
 export { type ProjectEvent }
 
+// Todo (frontend) -> Task (DB schema). Синхронизировать при изменении структуры!
 function todoToTask(todo: Todo): NewTask {
     return {
         id: todo.id,
@@ -33,6 +38,7 @@ function todoToTask(todo: Todo): NewTask {
     }
 }
 
+// Task (DB schema) -> Todo (frontend view model). Синхронизировать при изменении структуры!
 function taskToTodo(task: { id: string; name: string; isCompleted: boolean; placementDate: Date | null; sectionId?: string | null }): Todo {
     return {
         id: task.id,
