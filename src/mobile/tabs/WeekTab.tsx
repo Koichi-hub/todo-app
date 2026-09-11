@@ -47,7 +47,7 @@ export default function WeekTab() {
                 {formatDate(weekStart)} - {formatDate(weekEnd)}
             </h1>
 
-            <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto">
                 <div className="space-y-4 pb-2">
                     {todosByDate.map(({ date, todos }) => {
                         const dateKey = getDateKey(date)
@@ -100,23 +100,6 @@ export default function WeekTab() {
                     onUpdate={(id, text, description) => send({ type: 'UPDATE_TODO', id, text, description })}
                 />
             )}
-
-            <style>{`
-                .custom-scrollbar::-webkit-scrollbar {
-                    width: 6px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-track {
-                    background: rgba(255, 255, 255, 0.05);
-                    border-radius: 3px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb {
-                    background: rgba(255, 255, 255, 0.15);
-                    border-radius: 3px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                    background: rgba(255, 255, 255, 0.25);
-                }
-            `}</style>
         </div>
     )
 }

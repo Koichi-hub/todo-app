@@ -36,7 +36,7 @@ export default function DayTab() {
 
             <AddItemInput placeholder="Введите новую задачу..." onAdd={handleAdd} />
 
-            <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar w-full">
+            <div className="flex-1 overflow-y-auto w-full">
                 <div className="w-full mt-2">
                     <h2 className="text-white font-bold text-[16px]">Ждут выполнения</h2>
                     <div className="mt-1">
@@ -89,23 +89,6 @@ export default function DayTab() {
                     onUpdate={(id, text, description) => send({ type: 'UPDATE_TODO', id, text, description })}
                 />
             )}
-
-            <style>{`
-                .custom-scrollbar::-webkit-scrollbar {
-                    width: 6px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-track {
-                    background: rgba(255, 255, 255, 0.05);
-                    border-radius: 3px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb {
-                    background: rgba(255, 255, 255, 0.15);
-                    border-radius: 3px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                    background: rgba(255, 255, 255, 0.25);
-                }
-            `}</style>
         </div>
     )
 }

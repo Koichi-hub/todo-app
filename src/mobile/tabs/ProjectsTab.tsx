@@ -78,6 +78,9 @@ export default function ProjectsTab() {
     const handleCloseTask = () => {
         setIsTaskModalOpen(false)
         setSelectedTaskId(null)
+        if (selectedProject) {
+            send({ type: 'LOAD_PROJECT_SECTIONS', projectId: selectedProject.id })
+        }
     }
 
     const selectedTask = selectedTaskId
@@ -94,7 +97,7 @@ export default function ProjectsTab() {
 
             <AddItemInput placeholder="Введите название проекта..." onAdd={handleAdd} />
 
-            <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar w-full mt-2">
+            <div className="flex-1 overflow-y-auto w-full mt-2">
                 <div className="space-y-2">
                     {snapshot.context.projects.length === 0 ? (
                         <p className="text-white/50 text-sm italic">Нет проектов</p>
@@ -136,23 +139,6 @@ export default function ProjectsTab() {
                     onUpdate={(id, text, description) => send({ type: 'UPDATE_TODO', id, text, description })}
                 />
             )}
-
-            <style>{`
-                .custom-scrollbar::-webkit-scrollbar {
-                    width: 6px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-track {
-                    background: rgba(255, 255, 255, 0.05);
-                    border-radius: 3px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb {
-                    background: rgba(255, 255, 255, 0.15);
-                    border-radius: 3px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                    background: rgba(255, 255, 255, 0.25);
-                }
-            `}</style>
         </div>
     )
 }

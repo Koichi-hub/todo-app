@@ -17,26 +17,26 @@ function mapRowToTask(row: any): Task {
 export const taskService = {
     async getAll(): Promise<Task[]> {
         const db = await getDb();
-        const rows = db.select<any[]>('SELECT * FROM tasks');
+        const rows = await db.select<any[]>('SELECT * FROM tasks');
         return rows.map(mapRowToTask);
     },
 
     async getById(id: string): Promise<Task | undefined> {
         const db = await getDb();
-        const rows = db.select<any[]>('SELECT * FROM tasks WHERE id = ?', [id]);
+        const rows = await db.select<any[]>('SELECT * FROM tasks WHERE id = ?', [id]);
         return rows.length > 0 ? mapRowToTask(rows[0]) : undefined;
     },
 
     async getBySectionId(sectionId: string): Promise<Task[]> {
         const db = await getDb();
-        const rows = db.select<any[]>('SELECT * FROM tasks WHERE section_id = ?', [sectionId]);
+        const rows = await db.select<any[]>('SELECT * FROM tasks WHERE section_id = ?', [sectionId]);
         return rows.map(mapRowToTask);
     },
 
     async create(data: NewTask): Promise<Task> {
         const db = await getDb();
         const id = data.id || crypto.randomUUID();
-        db.execute(
+        await db.execute(
             `INSERT INTO tasks (id, name, description, is_completed, creation_date, placement_date, recorded_time_in_secs, section_id)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
             [
@@ -83,7 +83,7 @@ export const taskService = {
 
         if (updates.length > 0) {
             values.push(id);
-            db.execute(`UPDATE tasks SET ${updates.join(', ')} WHERE id = ?`, values);
+            await db.execute(`UPDATE tasks SET ${updates.join(', ')} WHERE id = ?`, values);
         }
 
         return this.getById(id);
@@ -91,17 +91,17 @@ export const taskService = {
 
     async delete(id: string): Promise<void> {
         const db = await getDb();
-        db.execute('DELETE FROM tasks WHERE id = ?', [id]);
+        await db.execute('DELETE FROM tasks WHERE id = ?', [id]);
     },
 
     async addTag(taskId: string, tagId: string): Promise<void> {
         const db = await getDb();
-        db.execute('INSERT INTO task_tags (task_id, tag_id) VALUES (?, ?)', [taskId, tagId]);
+        await db.execute('INSERT INTO task_tags (task_id, tag_id) VALUES (?, ?)', [taskId, tagId]);
     },
 
     async removeTag(taskId: string, tagId: string): Promise<void> {
         const db = await getDb();
-        db.execute('DELETE FROM task_tags WHERE task_id = ? AND tag_id = ?', [taskId, tagId]);
+        await db.execute('DELETE FROM task_tags WHERE task_id = ? AND tag_id = ?', [taskId, tagId]);
     },
 
     async getTags(taskId: string) {
@@ -114,12 +114,12 @@ export const taskService = {
 
     async addRelatedTask(taskId: string, relatedTaskId: string): Promise<void> {
         const db = await getDb();
-        db.execute('INSERT INTO task_relations (task_id, related_task_id) VALUES (?, ?)', [taskId, relatedTaskId]);
+        await db.execute('INSERT INTO task_relations (task_id, related_task_id) VALUES (?, ?)', [taskId, relatedTaskId]);
     },
 
     async removeRelatedTask(taskId: string, relatedTaskId: string): Promise<void> {
         const db = await getDb();
-        db.execute('DELETE FROM task_relations WHERE task_id = ? AND related_task_id = ?', [taskId, relatedTaskId]);
+        await db.execute('DELETE FROM task_relations WHERE task_id = ? AND related_task_id = ?', [taskId, relatedTaskId]);
     },
 
     async getRelatedTasks(taskId: string) {

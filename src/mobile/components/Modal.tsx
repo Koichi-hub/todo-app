@@ -3,7 +3,7 @@
 // Глобальный слушатель onBackButtonPress закрывает верхнюю модалку из стека
 // Если стек пуст — Tauri стандартно закрывает приложение
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useCallback } from "react"
 import { onBackButtonPress } from "@tauri-apps/api/app"
 import type { PluginListener } from "@tauri-apps/api/core"
 import type { ModalProps } from '../types'
@@ -13,22 +13,28 @@ interface ModalEntry {
     onClose: () => void
 }
 
+// Глобальный стек модалок (модульное состояние, не React state)
 const modalStack: ModalEntry[] = []
 let backButtonListener: PluginListener | null = null
 
+// Обработчик нажатия кнопки "Назад" — закрывает верхнюю модалку из стека
+// Вызывается из src/mobile/components/Modal.tsx
+function handleBackButton() {
+    const topModal = modalStack[modalStack.length - 1]
+    if (topModal) {
+        topModal.onClose()
+    }
+}
+
+// Регистрация слушателя кнопки "Назад" (singletone)
 function registerBackHandler() {
     if (backButtonListener) return
-
-    onBackButtonPress(() => {
-        const topModal = modalStack[modalStack.length - 1]
-        if (topModal) {
-            topModal.onClose()
-        }
-    }).then((listener) => {
+    onBackButtonPress(handleBackButton).then((listener) => {
         backButtonListener = listener
     })
 }
 
+// Удаление слушателя кнопки "Назад"
 function unregisterBackHandler() {
     if (backButtonListener) {
         backButtonListener.unregister()
@@ -36,36 +42,47 @@ function unregisterBackHandler() {
     }
 }
 
+// Добавление/удаление модалки из стека
+function pushModal(id: number, onClose: () => void) {
+    modalStack.push({ id, onClose })
+}
+
+function removeModal(id: number) {
+    const index = modalStack.findIndex(m => m.id === id)
+    if (index !== -1) modalStack.splice(index, 1)
+    if (modalStack.length === 0) unregisterBackHandler()
+}
+
+let modalIdCounter = 0
+function generateModalId() {
+    return ++modalIdCounter
+}
+
 export default function Modal({ isOpen, onClose, children }: ModalProps) {
     const overlayRef = useRef<HTMLDivElement>(null)
-    const modalIdRef = useRef<number>(Date.now())
+    const modalIdRef = useRef<number>(generateModalId())
+
+    // Клик по оверлею закрывает модалку
+    const handleOverlayClick = useCallback((e: MouseEvent) => {
+        if (overlayRef.current === e.target) {
+            removeModal(modalIdRef.current)
+            onClose()
+        }
+    }, [onClose])
 
     useEffect(() => {
         if (!isOpen) return
 
-        modalStack.push({ id: modalIdRef.current, onClose })
+        pushModal(modalIdRef.current, onClose)
         registerBackHandler()
 
-        const handleClick = (e: MouseEvent) => {
-            if (overlayRef.current === e.target) {
-                modalStack.splice(modalStack.findIndex(m => m.id === modalIdRef.current), 1)
-                if (modalStack.length === 0) {
-                    unregisterBackHandler()
-                }
-                onClose()
-            }
-        }
-
-        document.addEventListener("mousedown", handleClick)
+        document.addEventListener("mousedown", handleOverlayClick)
 
         return () => {
-            document.removeEventListener("mousedown", handleClick)
-            modalStack.splice(modalStack.findIndex(m => m.id === modalIdRef.current), 1)
-            if (modalStack.length === 0) {
-                unregisterBackHandler()
-            }
+            document.removeEventListener("mousedown", handleOverlayClick)
+            removeModal(modalIdRef.current)
         }
-    }, [isOpen, onClose])
+    }, [isOpen, onClose, handleOverlayClick])
 
     if (!isOpen) return null
 

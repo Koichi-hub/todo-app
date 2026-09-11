@@ -1,9 +1,10 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useMachine } from '@xstate/react'
 import MobileLayout from "./MobileLayout"
 import { DayTab, WeekTab, ProjectsTab, OverviewTab } from "./tabs"
 import { TABS, type TabId } from "./misc"
 import { machine, MachineContext } from "../shared/machines"
+import { getDb, runMigrations } from "../shared/services/db"
 
 const tabComponents: Record<TabId, React.ComponentType> = {
     day: DayTab,
@@ -16,8 +17,32 @@ export default function MobileApp() {
     const [activeTab, setActiveTab] = useState<TabId>("day")
     const [pressingTab, setPressingTab] = useState<TabId | null>(null)
     const [snapshot, send] = useMachine(machine)
+    const [dbReady, setDbReady] = useState(false)
+
+    // Клиентский runner миграций: инициализирует БД на мобильных устройствах.
+    useEffect(() => {
+        const initDb = async () => {
+            try {
+                const db = await getDb()
+                await runMigrations(db)
+            } catch (err) {
+                console.error('[App] Database initialization failed:', err)
+            } finally {
+                setDbReady(true)
+            }
+        }
+        initDb()
+    }, [])
 
     const ActiveTabComponent = tabComponents[activeTab]
+
+    if (!dbReady) {
+        return (
+            <div className="flex items-center justify-center h-screen bg-[#1a1a2e] text-white">
+                <p>Инициализация базы данных...</p>
+            </div>
+        )
+    }
 
     return (
         <MachineContext.Provider value={{ snapshot, send }}>

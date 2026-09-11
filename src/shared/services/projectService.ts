@@ -14,26 +14,26 @@ function mapRowToProject(row: any): Project {
 export const projectService = {
     async getAll(): Promise<Project[]> {
         const db = await getDb();
-        const rows = db.select<any[]>('SELECT * FROM projects');
+        const rows = await db.select<any[]>('SELECT * FROM projects');
         return rows.map(mapRowToProject);
     },
 
     async getById(id: string): Promise<Project | undefined> {
         const db = await getDb();
-        const rows = db.select<any[]>('SELECT * FROM projects WHERE id = ?', [id]);
+        const rows = await db.select<any[]>('SELECT * FROM projects WHERE id = ?', [id]);
         return rows.length > 0 ? mapRowToProject(rows[0]) : undefined;
     },
 
     async getByTagId(tagId: string): Promise<Project[]> {
         const db = await getDb();
-        const rows = db.select<any[]>('SELECT * FROM projects WHERE tag_id = ?', [tagId]);
+        const rows = await db.select<any[]>('SELECT * FROM projects WHERE tag_id = ?', [tagId]);
         return rows.map(mapRowToProject);
     },
 
     async create(data: NewProject): Promise<Project> {
         const db = await getDb();
         const id = data.id || crypto.randomUUID();
-        db.execute(
+        await db.execute(
             `INSERT INTO projects (id, name, description, creation_date, tag_id) VALUES (?, ?, ?, ?, ?)`,
             [id, data.name, data.description, data.creationDate.getTime(), data.tagId || null]
         );
@@ -62,7 +62,7 @@ export const projectService = {
 
         if (updates.length > 0) {
             values.push(id);
-            db.execute(`UPDATE projects SET ${updates.join(', ')} WHERE id = ?`, values);
+            await db.execute(`UPDATE projects SET ${updates.join(', ')} WHERE id = ?`, values);
         }
 
         return this.getById(id);
@@ -70,6 +70,6 @@ export const projectService = {
 
     async delete(id: string): Promise<void> {
         const db = await getDb();
-        db.execute('DELETE FROM projects WHERE id = ?', [id]);
+        await db.execute('DELETE FROM projects WHERE id = ?', [id]);
     },
 };
